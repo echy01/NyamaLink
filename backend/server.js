@@ -1,6 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import authRoutes from './routes/authroutes.js';
+import agentroutes from './routes/agentroutes.js';
+import butcherroutes from './routes/butcherroutes.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -16,6 +18,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/agent', agentroutes);
+app.use('/api/butcher', butcherroutes);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
