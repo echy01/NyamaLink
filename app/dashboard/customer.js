@@ -82,17 +82,17 @@
 //   };
 
 //   const filterMeat = () => {
-//     let filtered = meat.filter(item => 
+//     let filtered = meat.filter(item =>
 //       item.category?.toLowerCase() === activeTab.toLowerCase()
 //     );
-    
+
 //     if (searchQuery) {
 //       filtered = filtered.filter(item =>
 //         item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
 //         item.butchery?.toLowerCase().includes(searchQuery.toLowerCase())
 //       );
 //     }
-    
+
 //     setFilteredMeat(filtered);
 //   };
 
@@ -100,7 +100,7 @@
 //     try {
 //       const existingItem = cart.find(cartItem => cartItem._id === item._id);
 //       let updatedCart;
-      
+
 //       if (existingItem) {
 //         updatedCart = cart.map(cartItem =>
 //           cartItem._id === item._id
@@ -110,7 +110,7 @@
 //       } else {
 //         updatedCart = [...cart, { ...item, quantity: 1 }];
 //       }
-      
+
 //       setCart(updatedCart);
 //       await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
 //       Alert.alert('Success', 'Item added to cart!');
@@ -135,7 +135,7 @@
 //         removeFromCart(itemId);
 //         return;
 //       }
-      
+
 //       const updatedCart = cart.map(item =>
 //         item._id === itemId ? { ...item, quantity: newQuantity } : item
 //       );
@@ -471,19 +471,19 @@
 //       <View style={styles.profileContainer}>
 //         <Text style={styles.profileName}>{userName}</Text>
 //         <Text style={styles.profileRole}>Customer</Text>
-        
+
 //         <TouchableOpacity style={styles.profileButton}>
 //           <Text style={styles.profileButtonText}>Edit Profile</Text>
 //         </TouchableOpacity>
-        
+
 //         <TouchableOpacity style={styles.profileButton}>
 //           <Text style={styles.profileButtonText}>Delivery Addresses</Text>
 //         </TouchableOpacity>
-        
+
 //         <TouchableOpacity style={styles.profileButton}>
 //           <Text style={styles.profileButtonText}>Payment Methods</Text>
 //         </TouchableOpacity>
-        
+
 //         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
 //           <Text style={styles.logoutButtonText}>Logout</Text>
 //         </TouchableOpacity>
@@ -821,8 +821,6 @@
 //   },
 // });
 
-
-
 // customer.js
 // import React, { useState, useEffect } from 'react';
 // import {
@@ -905,17 +903,17 @@
 //   };
 
 //   const filterMeat = () => {
-//     let filtered = meat.filter(item => 
+//     let filtered = meat.filter(item =>
 //       item.category?.toLowerCase() === activeTab.toLowerCase()
 //     );
-    
+
 //     if (searchQuery) {
 //       filtered = filtered.filter(item =>
 //         item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
 //         item.butchery?.toLowerCase().includes(searchQuery.toLowerCase())
 //       );
 //     }
-    
+
 //     setFilteredMeat(filtered);
 //   };
 
@@ -923,7 +921,7 @@
 //     try {
 //       const existingItem = cart.find(cartItem => cartItem._id === item._id);
 //       let updatedCart;
-      
+
 //       if (existingItem) {
 //         updatedCart = cart.map(cartItem =>
 //           cartItem._id === item._id
@@ -933,7 +931,7 @@
 //       } else {
 //         updatedCart = [...cart, { ...item, quantity: 1 }];
 //       }
-      
+
 //       setCart(updatedCart);
 //       await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
 //       Alert.alert('Success', 'Item added to cart!');
@@ -958,7 +956,7 @@
 //         handleRemoveFromCart(itemId);
 //         return;
 //       }
-      
+
 //       const updatedCart = cart.map(item =>
 //         item._id === itemId ? { ...item, quantity: newQuantity } : item
 //       );
@@ -1075,21 +1073,21 @@
 //       <Text style={[styles.textLight, { textAlign: 'center', marginBottom: 24 }]}>
 //         Customer
 //       </Text>
-      
+
 //       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
 //         <Text style={styles.buttonText}>Edit Profile</Text>
 //       </TouchableOpacity>
-      
+
 //       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
 //         <Text style={styles.buttonText}>Delivery Addresses</Text>
 //       </TouchableOpacity>
-      
+
 //       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
 //         <Text style={styles.buttonText}>Payment Methods</Text>
 //       </TouchableOpacity>
-      
-//       <TouchableOpacity 
-//         style={[styles.button, styles.buttonOutline]} 
+
+//       <TouchableOpacity
+//         style={[styles.button, styles.buttonOutline]}
 //         onPress={handleLogout}
 //       >
 //         <Text style={styles.buttonOutlineText}>Logout</Text>
@@ -1105,7 +1103,7 @@
 //     <View style={styles.container}>
 //       <View style={styles.header}>
 //         <Text style={styles.headerTitle}>
-//           {activeBottomTab === 'browse' ? `Welcome, ${userName}!` : 
+//           {activeBottomTab === 'browse' ? `Welcome, ${userName}!` :
 //            activeBottomTab === 'cart' ? 'Shopping Cart' :
 //            activeBottomTab === 'orders' ? 'Order History' : 'Profile'}
 //         </Text>
@@ -1125,9 +1123,9 @@
 //             onChangeText={setSearchQuery}
 //           />
 
-//           <ScrollView 
-//             horizontal 
-//             showsHorizontalScrollIndicator={false} 
+//           <ScrollView
+//             horizontal
+//             showsHorizontalScrollIndicator={false}
 //             style={styles.tabContainer}
 //           >
 //             {meatCategories.map((category) => (
@@ -1175,8 +1173,8 @@
 //               <Text style={[styles.text, styles.textBold, { textAlign: 'center', marginBottom: 12 }]}>
 //                 Total: KES {getTotalPrice()}
 //               </Text>
-//               <TouchableOpacity 
-//                 style={styles.button} 
+//               <TouchableOpacity
+//                 style={styles.button}
 //                 onPress={handlePlaceOrder}
 //               >
 //                 <Text style={styles.buttonText}>Place Order</Text>
@@ -1208,13 +1206,13 @@
 //           <TouchableOpacity
 //             key={tab}
 //             style={[
-//               styles.navItem, 
+//               styles.navItem,
 //               activeBottomTab === tab && styles.activeNavItem
 //             ]}
 //             onPress={() => setActiveBottomTab(tab)}
 //           >
 //             <Text style={[
-//               styles.navText, 
+//               styles.navText,
 //               activeBottomTab === tab && styles.activeNavText
 //             ]}>
 //               {tab === 'cart' ? `Cart (${cart.length})` : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -1226,43 +1224,41 @@
 //   );
 // }
 
-
-
 // customer.js
-import React, { useState, useEffect } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
+  RefreshControl,
+  Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../api';
-import styles from './styles';
+  View,
+} from "react-native";
+import api from "../api";
+import styles from "./styles";
 
-const meatCategories = ['beef', 'goat', 'chicken', 'pork', 'lamb'];
+const meatCategories = ["beef", "goat", "chicken", "pork", "lamb"];
 const bottomTabs = [
-  { id: 'browse', label: 'Browse' },
-  { id: 'cart', label: 'Cart' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'profile', label: 'Profile' },
+  { id: "browse", label: "Browse" },
+  { id: "cart", label: "Cart" },
+  { id: "orders", label: "Orders" },
+  { id: "profile", label: "Profile" },
 ];
 
 export default function CustomerDashboard({ userName }) {
-  const [activeTab, setActiveTab] = useState('beef');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState("beef");
+  const [searchQuery, setSearchQuery] = useState("");
   const [meat, setMeat] = useState([]);
   const [filteredMeat, setFilteredMeat] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeBottomTab, setActiveBottomTab] = useState('browse');
+  const [activeBottomTab, setActiveBottomTab] = useState("browse");
   const router = useRouter();
 
   // Load all initial data
@@ -1272,7 +1268,7 @@ export default function CustomerDashboard({ userName }) {
         setLoading(true);
         await Promise.all([loadMeatData(), loadCartData(), loadOrderHistory()]);
       } catch (error) {
-        Alert.alert('Error', 'Failed to load initial data');
+        Alert.alert("Error", "Failed to load initial data");
       } finally {
         setLoading(false);
       }
@@ -1290,19 +1286,19 @@ export default function CustomerDashboard({ userName }) {
       const response = await api.getAvailableMeat();
       setMeat(response.data.meat || []);
     } catch (error) {
-      console.error('Error loading meat:', error);
+      console.error("Error loading meat:", error);
       throw error;
     }
   };
 
   const loadCartData = async () => {
     try {
-      const cartData = await AsyncStorage.getItem('cart');
+      const cartData = await AsyncStorage.getItem("cart");
       if (cartData) {
         setCart(JSON.parse(cartData));
       }
     } catch (error) {
-      console.error('Error loading cart:', error);
+      console.error("Error loading cart:", error);
       throw error;
     }
   };
@@ -1312,7 +1308,7 @@ export default function CustomerDashboard({ userName }) {
       const response = await api.getCustomerOrders();
       setOrders(response.data.orders || []);
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error("Error loading orders:", error);
       throw error;
     }
   };
@@ -1322,40 +1318,41 @@ export default function CustomerDashboard({ userName }) {
       setRefreshing(true);
       await Promise.all([loadMeatData(), loadOrderHistory()]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to refresh data');
+      Alert.alert("Error", "Failed to refresh data");
     } finally {
       setRefreshing(false);
     }
   };
 
   const filterMeat = () => {
-    let filtered = meat.filter(item => 
-      item.category?.toLowerCase() === activeTab.toLowerCase()
+    let filtered = meat.filter(
+      (item) => item.category?.toLowerCase() === activeTab.toLowerCase()
     );
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(item =>
-        item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.butchery?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (item) =>
+          item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.butchery?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     setFilteredMeat(filtered);
   };
 
   // Cart operations
   const handleAddToCart = async (item) => {
     if (item.stock <= 0) {
-      Alert.alert('Out of Stock', 'This item is currently unavailable');
+      Alert.alert("Out of Stock", "This item is currently unavailable");
       return;
     }
 
     try {
-      const existingItem = cart.find(cartItem => cartItem._id === item._id);
+      const existingItem = cart.find((cartItem) => cartItem._id === item._id);
       let updatedCart;
-      
+
       if (existingItem) {
-        updatedCart = cart.map(cartItem =>
+        updatedCart = cart.map((cartItem) =>
           cartItem._id === item._id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
@@ -1363,22 +1360,22 @@ export default function CustomerDashboard({ userName }) {
       } else {
         updatedCart = [...cart, { ...item, quantity: 1 }];
       }
-      
+
       setCart(updatedCart);
-      await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
-      Alert.alert('Success', 'Item added to cart!');
+      await AsyncStorage.setItem("cart", JSON.stringify(updatedCart));
+      Alert.alert("Success", "Item added to cart!");
     } catch (error) {
-      Alert.alert('Error', 'Failed to add item to cart');
+      Alert.alert("Error", "Failed to add item to cart");
     }
   };
 
   const handleRemoveFromCart = async (itemId) => {
     try {
-      const updatedCart = cart.filter(item => item._id !== itemId);
+      const updatedCart = cart.filter((item) => item._id !== itemId);
       setCart(updatedCart);
-      await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
+      await AsyncStorage.setItem("cart", JSON.stringify(updatedCart));
     } catch (error) {
-      Alert.alert('Error', 'Failed to remove item from cart');
+      Alert.alert("Error", "Failed to remove item from cart");
     }
   };
 
@@ -1388,41 +1385,44 @@ export default function CustomerDashboard({ userName }) {
         handleRemoveFromCart(itemId);
         return;
       }
-      
-      const updatedCart = cart.map(item =>
+
+      const updatedCart = cart.map((item) =>
         item._id === itemId ? { ...item, quantity: newQuantity } : item
       );
       setCart(updatedCart);
-      await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
+      await AsyncStorage.setItem("cart", JSON.stringify(updatedCart));
     } catch (error) {
-      Alert.alert('Error', 'Failed to update quantity');
+      Alert.alert("Error", "Failed to update quantity");
     }
   };
 
   const handlePlaceOrder = async () => {
     if (cart.length === 0) {
-      Alert.alert('Error', 'Your cart is empty');
+      Alert.alert("Error", "Your cart is empty");
       return;
     }
 
     try {
       const response = await api.placeOrder(cart);
-      Alert.alert('Success', 'Order placed successfully!');
+      Alert.alert("Success", "Order placed successfully!");
       setCart([]);
-      await AsyncStorage.removeItem('cart');
+      await AsyncStorage.removeItem("cart");
       loadOrderHistory();
-      setActiveBottomTab('orders');
+      setActiveBottomTab("orders");
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to place order');
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to place order"
+      );
     }
   };
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.multiRemove(['token', 'cart']);
-      router.replace('/login');
+      await AsyncStorage.multiRemove(["token", "cart"]);
+      router.replace("/login");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -1439,12 +1439,16 @@ export default function CustomerDashboard({ userName }) {
           <Text style={styles.textLight}>Stock: {item.stock}kg</Text>
         </View>
         <TouchableOpacity
-          style={[styles.button, styles.buttonSmall, item.stock <= 0 && { opacity: 0.5 }]}
+          style={[
+            styles.button,
+            styles.buttonSmall,
+            item.stock <= 0 && { opacity: 0.5 },
+          ]}
           onPress={() => handleAddToCart(item)}
           disabled={item.stock <= 0}
         >
           <Text style={styles.buttonText}>
-            {item.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+            {item.stock <= 0 ? "Out of Stock" : "Add to Cart"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1459,19 +1463,27 @@ export default function CustomerDashboard({ userName }) {
           <Text style={[styles.text, { color: styles.colors.primary }]}>
             KES {item.price}/kg
           </Text>
-          <Text style={styles.textLight}>Subtotal: KES {(item.price * item.quantity).toFixed(2)}</Text>
+          <Text style={styles.textLight}>
+            Subtotal: KES {(item.price * item.quantity).toFixed(2)}
+          </Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity
             style={[styles.button, styles.buttonSmall, { marginRight: 8 }]}
-            onPress={() => handleUpdateCartQuantity(item._id, item.quantity - 1)}
+            onPress={() =>
+              handleUpdateCartQuantity(item._id, item.quantity - 1)
+            }
           >
             <Text style={styles.buttonText}>-</Text>
           </TouchableOpacity>
-          <Text style={[styles.text, { marginHorizontal: 8 }]}>{item.quantity}</Text>
+          <Text style={[styles.text, { marginHorizontal: 8 }]}>
+            {item.quantity}
+          </Text>
           <TouchableOpacity
             style={[styles.button, styles.buttonSmall, { marginRight: 8 }]}
-            onPress={() => handleUpdateCartQuantity(item._id, item.quantity + 1)}
+            onPress={() =>
+              handleUpdateCartQuantity(item._id, item.quantity + 1)
+            }
           >
             <Text style={styles.buttonText}>+</Text>
           </TouchableOpacity>
@@ -1492,7 +1504,10 @@ export default function CustomerDashboard({ userName }) {
         {new Date(item.createdAt).toLocaleDateString()}
       </Text>
       <Text style={[styles.text, styles.textBold]}>
-        Status: <Text style={{ color: getStatusColor(item.status) }}>{item.status}</Text>
+        Status:{" "}
+        <Text style={{ color: getStatusColor(item.status) }}>
+          {item.status}
+        </Text>
       </Text>
       <Text style={[styles.text, { color: styles.colors.primary }]}>
         Total: KES {item.total}
@@ -1508,27 +1523,35 @@ export default function CustomerDashboard({ userName }) {
 
   const renderProfile = () => (
     <View style={styles.content}>
-      <Text style={[styles.text, styles.textBold, { textAlign: 'center', marginBottom: 16 }]}>
+      <Text
+        style={[
+          styles.text,
+          styles.textBold,
+          { textAlign: "center", marginBottom: 16 },
+        ]}
+      >
         {userName}
       </Text>
-      <Text style={[styles.textLight, { textAlign: 'center', marginBottom: 24 }]}>
+      <Text
+        style={[styles.textLight, { textAlign: "center", marginBottom: 24 }]}
+      >
         Customer
       </Text>
-      
+
       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
         <Text style={styles.buttonText}>Edit Profile</Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
         <Text style={styles.buttonText}>Delivery Addresses</Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity style={[styles.button, { marginBottom: 12 }]}>
         <Text style={styles.buttonText}>Payment Methods</Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={[styles.button, styles.buttonOutline]} 
+
+      <TouchableOpacity
+        style={[styles.button, styles.buttonOutline]}
         onPress={handleLogout}
       >
         <Text style={styles.buttonOutlineText}>Logout</Text>
@@ -1538,16 +1561,18 @@ export default function CustomerDashboard({ userName }) {
 
   // Helper functions
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+    return cart
+      .reduce((total, item) => total + item.price * item.quantity, 0)
+      .toFixed(2);
   };
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'pending':
+      case "pending":
         return styles.colors.warning;
-      case 'delivered':
+      case "delivered":
         return styles.colors.success;
-      case 'cancelled':
+      case "cancelled":
         return styles.colors.danger;
       default:
         return styles.colors.textDark;
@@ -1556,20 +1581,32 @@ export default function CustomerDashboard({ userName }) {
 
   const getHeaderTitle = () => {
     switch (activeBottomTab) {
-      case 'browse': return `Welcome, ${userName}!`;
-      case 'cart': return `Cart (${cart.length})`;
-      case 'orders': return 'Order History';
-      case 'profile': return 'Profile';
-      default: return 'NyamaLink';
+      case "browse":
+        return `Welcome, ${userName}!`;
+      case "cart":
+        return `Cart (${cart.length})`;
+      case "orders":
+        return "Order History";
+      case "profile":
+        return "Profile";
+      default:
+        return "NyamaLink";
     }
   };
 
   // Loading state
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color={styles.colors.primary} />
-        <Text style={[styles.text, { marginTop: 16 }]}>Loading dashboard...</Text>
+        <Text style={[styles.text, { marginTop: 16 }]}>
+          Loading dashboard...
+        </Text>
       </View>
     );
   }
@@ -1578,14 +1615,14 @@ export default function CustomerDashboard({ userName }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
-        {activeBottomTab === 'browse' && (
+        {activeBottomTab === "browse" && (
           <TouchableOpacity onPress={handleLogout}>
             <Text style={{ color: styles.colors.white }}>Logout</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {activeBottomTab === 'browse' && (
+      {activeBottomTab === "browse" && (
         <>
           <TextInput
             style={styles.input}
@@ -1594,9 +1631,9 @@ export default function CustomerDashboard({ userName }) {
             onChangeText={setSearchQuery}
           />
 
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             style={styles.tabContainer}
             contentContainerStyle={{ paddingHorizontal: 8 }}
           >
@@ -1606,7 +1643,12 @@ export default function CustomerDashboard({ userName }) {
                 style={[styles.tab, activeTab === category && styles.tabActive]}
                 onPress={() => setActiveTab(category)}
               >
-                <Text style={[styles.tabText, activeTab === category && styles.tabTextActive]}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === category && styles.tabTextActive,
+                  ]}
+                >
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -1619,24 +1661,24 @@ export default function CustomerDashboard({ userName }) {
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.content}
             refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
+              <RefreshControl
+                refreshing={refreshing}
                 onRefresh={refreshData}
                 colors={[styles.colors.primary]}
               />
             }
             ListEmptyComponent={
               <Text style={styles.emptyState}>
-                {searchQuery 
-                  ? 'No matching meat found' 
-                  : 'No meat available in this category'}
+                {searchQuery
+                  ? "No matching meat found"
+                  : "No meat available in this category"}
               </Text>
             }
           />
         </>
       )}
 
-      {activeBottomTab === 'cart' && (
+      {activeBottomTab === "cart" && (
         <>
           <FlatList
             data={cart}
@@ -1650,11 +1692,17 @@ export default function CustomerDashboard({ userName }) {
 
           {cart.length > 0 && (
             <View style={{ padding: 16, backgroundColor: styles.colors.white }}>
-              <Text style={[styles.text, styles.textBold, { textAlign: 'center', marginBottom: 12 }]}>
+              <Text
+                style={[
+                  styles.text,
+                  styles.textBold,
+                  { textAlign: "center", marginBottom: 12 },
+                ]}
+              >
                 Total: KES {getTotalPrice()}
               </Text>
-              <TouchableOpacity 
-                style={styles.button} 
+              <TouchableOpacity
+                style={styles.button}
                 onPress={handlePlaceOrder}
               >
                 <Text style={styles.buttonText}>Place Order</Text>
@@ -1664,15 +1712,15 @@ export default function CustomerDashboard({ userName }) {
         </>
       )}
 
-      {activeBottomTab === 'orders' && (
+      {activeBottomTab === "orders" && (
         <FlatList
           data={orders}
           renderItem={renderOrderItem}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.content}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
+            <RefreshControl
+              refreshing={refreshing}
               onRefresh={refreshData}
               colors={[styles.colors.primary]}
             />
@@ -1683,23 +1731,25 @@ export default function CustomerDashboard({ userName }) {
         />
       )}
 
-      {activeBottomTab === 'profile' && renderProfile()}
+      {activeBottomTab === "profile" && renderProfile()}
 
       <View style={styles.bottomNavigation}>
         {bottomTabs.map((tab) => (
           <TouchableOpacity
             key={tab.id}
             style={[
-              styles.navItem, 
-              activeBottomTab === tab.id && styles.activeNavItem
+              styles.navItem,
+              activeBottomTab === tab.id && styles.activeNavItem,
             ]}
             onPress={() => setActiveBottomTab(tab.id)}
           >
-            <Text style={[
-              styles.navText, 
-              activeBottomTab === tab.id && styles.activeNavText
-            ]}>
-              {tab.id === 'cart' ? `Cart (${cart.length})` : tab.label}
+            <Text
+              style={[
+                styles.navText,
+                activeBottomTab === tab.id && styles.activeNavText,
+              ]}
+            >
+              {tab.id === "cart" ? `Cart (${cart.length})` : tab.label}
             </Text>
           </TouchableOpacity>
         ))}

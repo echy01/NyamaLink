@@ -1,64 +1,31 @@
 import express from 'express';
-import Inventory from '../models/inventory.js';
-import Order from '../models/order.js';
-import Purchase from '../models/purchase.js';
-import User from '../models/User.js';
+import {
+  getSlaughterhouseInventory,
+  addSlaughterhouseInventory,
+  getButcheryOrders,
+  getButchers,
+  getMyPurchaseOrders,
+  getAvailableMeatForPurchase,
+  placeMeatOrder
+} from '../controllers/agentcontroller.js'; // Import functions from the new controller
+import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
 
 const router = express.Router();
 
-// 🥩 Get inventory
-router.get('/inventory', async (req, res) => {
-  const inventory = await Inventory.find();
-  res.json(inventory);
-});
+// 🥩 Inventory Management for the Agent's own slaughterhouse
+router.get('/inventory', protect, getSlaughterhouseInventory); // Only agent can view their own inventory
+router.post('/inventory', protect, addSlaughterhouseInventory); // Only agent can add to their own inventory
 
-// ➕ Add inventory
-router.post('/inventory', async (req, res) => {
-  const item = new Inventory(req.body);
-  await item.save();
-  res.json(item);
-});
+// 🧾 Orders placed by butchers to this slaughterhouse (Agent's inbound orders)
+router.get('/orders', protect, getButcheryOrders);
 
-// 🧾 Get customer orders
-router.get('/orders', async (req, res) => {
-  const orders = await Order.find({ destination: 'slaughterhouse' });
-  res.json(orders);
-});
+// 👥 Get all registered butchers (for agent to view)
+router.get('/butchers', protect, getButchers);
 
-// 🐄 Get available meat from other slaughterhouses
-router.get('/purchase/available', async (req, res) => {
-  const available = await Inventory.find({ isPublic: true });
-  res.json(available);
-});
-
-// 📦 View slaughterhouse's own orders from others
-router.get('/purchase/myorders', async (req, res) => {
-  const orders = await Purchase.find({ buyerType: 'slaughterhouse' });
-  res.json(orders);
-});
-
-// 🛒 Order meat from another slaughterhouse
-router.post('/purchase/order', async (req, res) => {
-  const { meatId, quantity } = req.body;
-  const order = new Purchase({ meatId, quantity, buyerType: 'slaughterhouse' });
-  await order.save();
-  res.json(order);
-});
-
-// 👥 Get all registered butchers
-router.get('/butchers', async (req, res) => {
-  try {
-    const butchers = await User.find({ role: 'butcher' }).select('name contact');
-    res.json(butchers);
-  } catch (error) {
-    console.error('Failed to fetch butchers:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-router.get('/test', (req, res) => {
-  res.send('Slaughterhouse is up 🚀');
-});
+// 🛒 Agent's own purchase orders (from other slaughterhouses)
+router.get('/purchase/myorders', protect, getMyPurchaseOrders);
+router.get('/purchase/available', protect, getAvailableMeatForPurchase); // Meat available from others for agent to buy
+router.post('/purchase/order', protect, placeMeatOrder); // Agent places order to another slaughterhouse
 
 
 export default router;

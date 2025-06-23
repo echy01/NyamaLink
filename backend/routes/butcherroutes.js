@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getInventory,
   addInventoryItem,
+  updateInventoryItem,       
   updateInventoryStock,
   getCustomerOrders,
   updateOrderStatus,
@@ -12,16 +13,17 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Inventory routes
+// 📦 Inventory Management
 router.get('/inventory', protect, getInventory);
 router.post('/inventory/add', protect, addInventoryItem);
 router.put('/inventory/:itemId/stock', protect, updateInventoryStock);
+router.put('/inventory/:itemId', protect, updateInventoryItem); 
 
-// Customer orders
+// 🧾 Customer Orders
 router.get('/customer-orders', protect, getCustomerOrders);
 router.put('/orders/:orderId/status', protect, updateOrderStatus);
 
-// Slaughterhouse orders
+// 🛒 Slaughterhouse Orders
 router.get('/slaughterhouse-orders', protect, getSlaughterhouseOrders);
 router.post('/order-from-slaughterhouse', protect, orderFromSlaughterhouse);
 
