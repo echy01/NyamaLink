@@ -1,66 +1,77 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = "http://192.168.100.48:5000/api";
+const BASE_URL = 'http://192.168.100.48:5000/api'; 
 
-const instance = axios.create({
-  baseURL: API_BASE_URL,
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Attach JWT token from AsyncStorage
-instance.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
-// Export grouped API calls
-const api = {
-  // 🔐 Auth
-  login: (credentials) => instance.post("/auth/login", credentials),
-  signup: (data) => instance.post("/auth/register", data),
+// --- Auth Endpoints ---
+const register = (userData) => api.post('/auth/register', userData);
+const login = (userData) => api.post('/auth/login', userData);
+const getProfile = () => api.get('/auth/profile');
 
-  // 🧍‍♂️ Butcher Endpoints
-  getButcherInventory: () => instance.get("/butcher/inventory"),
-  // Pass meatType, price, stock for adding
-  addInventoryItem: (item) =>
-    instance.post("/butcher/inventory/add", {
-      meatType: item.meatType,
-      price: item.price,
-      stock: item.stock,
-    }),
-  // Pass meatType, price, stock for updating
-  updateInventoryItem: (id, updates) =>
-    instance.put(`/butcher/inventory/${id}`, {
-      meatType: updates.meatType,
-      price: updates.price,
-      stock: updates.stock,
-    }),
-  updateInventoryStock: (id, stock) =>
-    instance.put(`/butcher/inventory/${id}/stock`, { stock }),
-  getCustomerOrdersForButcher: () => instance.get("/butcher/customer-orders"),
-  updateOrderStatus: (id, status) =>
-    instance.put(`/orders/${id}/status`, { status }),
-  getAvailableMeatForPurchase: () => instance.get("/agent/purchase/available"),
-  orderFromSlaughterhouse: (meatId, quantity) =>
-    instance.post("/butcher/order-from-slaughterhouse", { meatId, quantity }),
-  getSlaughterhouseOrders: () => instance.get("/butcher/slaughterhouse-orders"),
+// --- Agent Endpoints ---
+const getSlaughterhouseInventory = () => api.get('/agent/inventory');
+const addSlaughterhouseInventory = (itemData) => api.post('/agent/inventory', itemData);
+const getButcheryOrders = () => api.get('/agent/orders');
+const getButchers = () => api.get('/agent/butchers');
+const getMyPurchaseOrders = () => api.get('/agent/purchase/myorders');
+const getAvailableMeatForPurchase = () => api.get('/agent/purchase/available'); 
+const placeMeatOrderToSlaughterhouse = (meatId, quantity) => api.post('/agent/purchase/order', { meatId, quantity });
 
-  // 🧑‍🌾 Slaughterhouse Endpoints (Agent)
-  getSlaughterhouseInventory: () => instance.get("/agent/inventory"),
-  addSlaughterhouseInventory: (item) => instance.post("/agent/inventory", item),
-  getButcheryOrders: () => instance.get("/agent/orders"),
-  getMyPurchaseOrders: () => instance.get("/agent/purchase/myorders"),
-  placeMeatOrder: (meatId, quantity) =>
-    instance.post("/agent/purchase/order", { meatId, quantity }),
-  getButchers: () => instance.get("/agent/butchers"),
+// --- Butcher Endpoints ---
+const getButcherInventory = () => api.get('/butcher/inventory');
+const addInventoryItem = (itemData) => api.post('/butcher/inventory/add', itemData);
+const updateInventoryItem = (itemId, itemData) => api.put(`/butcher/inventory/${itemId}`, itemData);
+const updateInventoryStock = (itemId, stock) => api.put(`/butcher/inventory/${itemId}/stock`, { stock });
+const getCustomerOrdersForButcher = () => api.get('/butcher/customer-orders'); 
+const updateOrderStatus = (orderId, status) => api.put(`/butcher/orders/${orderId}/status`, { status });
+const getSlaughterhouseOrders = () => api.get('/butcher/slaughterhouse-orders');
+const orderFromSlaughterhouse = (meatId, quantity) => api.post('/butcher/order-from-slaughterhouse', { meatId, quantity });
 
-  // 🧍‍♀️ Customer Endpoints (if used)
-  getAvailableMeat: () => instance.get("/meat/available"),
-  placeOrder: (items) => instance.post("/orders/place", { items }),
-  getCustomerOrders: () => instance.get("/orders/customer"),
+// --- Customer Endpoints (NEW) ---
+const getAvailableMeatForCustomers = () => api.get('/customer/available-meat'); 
+const placeCustomerOrder = (meatId, quantity) => api.post('/customer/place-order', { meatId, quantity });
+const getMyCustomerOrders = () => api.get('/customer/my-orders'); 
+
+export default {
+  register,
+  login,
+  getProfile,
+  getSlaughterhouseInventory,
+  addSlaughterhouseInventory,
+  getButcheryOrders,
+  getButchers,
+  getMyPurchaseOrders,
+  getAvailableMeatForPurchase,
+  placeMeatOrderToSlaughterhouse,
+  getButcherInventory,
+  addInventoryItem,
+  updateInventoryItem,
+  updateInventoryStock,
+  getCustomerOrdersForButcher,
+  updateOrderStatus,
+  getSlaughterhouseOrders,
+  orderFromSlaughterhouse,
+  getAvailableMeatForCustomers, 
+  placeCustomerOrder,
+  getMyCustomerOrders,
 };
-
-export default api;

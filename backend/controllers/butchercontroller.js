@@ -1,32 +1,21 @@
 import asyncHandler from 'express-async-handler';
-import Inventory from '../models/inventory.js'; // Ensure correct path to your Inventory model
-import Order from '../models/order.js';
+import Inventory from '../models/inventory.js'; 
+import Order from '../models/order.js';       
 import Purchase from '../models/purchase.js';
+import User from '../models/User.js';        
 
-// 📦 GET butcher's inventory
+
 export const getInventory = asyncHandler(async (req, res) => {
-  // Ensure req.user exists before querying for ownerId
-  if (!req.user || !req.user._id) {
+  if (!req.user || !req.user._id || req.user.role !== 'butcher') {
     res.status(401);
-    throw new Error('Not authorized, user ID not found');
+    throw new Error('Not authorized, butcher user ID not found or not a butcher');
   }
-  const inventoryItems = await Inventory.find({ ownerType: 'butcher', ownerId: req.user._id });
-  // Map DB fields to frontend expected names (pricePerKg -> price, quantity -> stock)
-  // Also include original _id and ensure meatType is passed.
-  const formattedInventory = inventoryItems.map(item => ({
-    _id: item._id,
-    meatType: item.meatType,
-    price: item.pricePerKg, // Map pricePerKg from DB to 'price' for frontend
-    stock: item.quantity,    // Map quantity from DB to 'stock' for frontend
-    // If you need slaughterhouseName for display purposes for butcher-owned items,
-    // you might include item.slaughterhouseName here, but it's not necessary for the fix.
-  }));
-  res.json({ inventory: formattedInventory }); // Wrap in 'inventory' key as frontend expects
+  const inventory = await Inventory.find({ ownerType: 'butcher', ownerId: req.user._id });
+  res.json({ inventory }); 
 });
 
-// ➕ ADD new inventory item
+
 export const addInventoryItem = asyncHandler(async (req, res) => {
-  // Destructure meatType, price, stock instead of name, category
   const { meatType, price, stock } = req.body;
 
   if (!meatType || !price || !stock) {
@@ -34,72 +23,42 @@ export const addInventoryItem = asyncHandler(async (req, res) => {
     throw new Error('All fields (meatType, price, stock) are required');
   }
 
-  // Ensure req.user exists and has an _id for ownerId
-  if (!req.user || !req.user._id) {
+  if (!req.user || !req.user._id || req.user.role !== 'butcher') {
     res.status(401);
-    throw new Error('Not authorized, user ID not found');
+    throw new Error('Not authorized, user is not a butcher or ID not found');
   }
 
   const newItem = new Inventory({
-    meatType,           // Use meatType
-    quantity: stock,    // Map 'stock' from frontend to 'quantity' in DB
-    pricePerKg: price,  // Map 'price' from frontend to 'pricePerKg' in DB
-    slaughterhouseName: 'Butcher Self-Owned', // Provide a default/placeholder value for butcher's own inventory
-    isPublic: true,     // Assuming butcher inventory items are generally public for customers
-    ownerType: 'butcher', // This field is used in your controller but not in the uploaded model schema.
-    ownerId: req.user._id, // This field is used in your controller but not in the uploaded model schema.
+    meatType,
+    quantity: parseFloat(stock), 
+    pricePerKg: parseFloat(price), 
+    slaughterhouseName: req.user.name, 
+    isPublic: false, 
+    ownerType: 'butcher',
+    ownerId: req.user._id,
   });
 
   await newItem.save();
-  res.status(201).json({ message: 'Item added successfully', item: newItem }); // Return item for confirmation
+  res.status(201).json(newItem);
 });
 
-// ✏️ UPDATE inventory item (fields: meatType, price, stock)
 export const updateInventoryItem = asyncHandler(async (req, res) => {
   const { itemId } = req.params;
-  // Destructure meatType, price, stock from body
-  const { meatType, price, stock } = req.body;
+  const { meatType, price, stock } = req.body; 
 
   const updates = {};
   if (meatType !== undefined) updates.meatType = meatType;
-  if (price !== undefined) updates.pricePerKg = parseFloat(price); // Map to pricePerKg
-  if (stock !== undefined) updates.quantity = parseFloat(stock);   // Map to quantity
+  if (price !== undefined) updates.pricePerKg = parseFloat(price); 
+  if (stock !== undefined) updates.quantity = parseFloat(stock);   
 
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
-    res.status(401);
-    throw new Error('Not authorized, user ID not found');
+  if (Object.keys(updates).length === 0) {
+    res.status(400);
+    throw new Error('No fields provided for update');
   }
 
   const updatedItem = await Inventory.findOneAndUpdate(
-    { _id: itemId, ownerType: 'butcher', ownerId: req.user._id }, // Filter by owner to ensure only current butcher can update
+    { _id: itemId, ownerType: 'butcher', ownerId: req.user._id },
     { $set: updates },
-    { new: true, runValidators: true } // runValidators ensures updates adhere to schema
-  );
-
-  if (!updatedItem) {
-    res.status(404);
-    throw new Error('Inventory item not found or unauthorized');
-  }
-
-  res.json({ message: 'Inventory item updated', item: updatedItem }); // Return updated item for confirmation
-});
-
-// @desc    Update stock of an inventory item (kept for specific stock update if needed)
-// @route   PUT /api/butcher/inventory/:itemId/stock
-export const updateInventoryStock = asyncHandler(async (req, res) => {
-  const { itemId } = req.params;
-  const { stock } = req.body; // Expects 'stock' from frontend
-
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
-    res.status(401);
-    throw new Error('Not authorized, user ID not found');
-  }
-
-  const updatedItem = await Inventory.findOneAndUpdate(
-    { _id: itemId, ownerType: 'butcher', ownerId: req.user._id }, // Filter by owner
-    { quantity: parseFloat(stock) }, // Update 'quantity' in DB
     { new: true }
   );
 
@@ -108,34 +67,94 @@ export const updateInventoryStock = asyncHandler(async (req, res) => {
     throw new Error('Inventory item not found or unauthorized');
   }
 
-  res.json({ message: `Stock updated`, item: updatedItem });
+  res.json(updatedItem);
 });
 
-// 🧾 GET customer orders placed to this butcher
-export const getCustomerOrders = asyncHandler(async (req, res) => {
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
-    res.status(401);
-    throw new Error('Not authorized, user ID not found');
+
+export const updateInventoryStock = asyncHandler(async (req, res) => {
+  const { itemId } = req.params;
+  const { stock } = req.body;
+
+  if (stock === undefined || isNaN(parseFloat(stock))) {
+    res.status(400);
+    throw new Error('Stock quantity is required and must be a number');
   }
-  const orders = await Order.find({ butcherId: req.user._id }).sort({ createdAt: -1 });
-  res.json({ orders }); // Wrap in 'orders' key as frontend expects
+
+  const updatedItem = await Inventory.findOneAndUpdate(
+    { _id: itemId, ownerType: 'butcher', ownerId: req.user._id },
+    { $set: { quantity: parseFloat(stock) } }, 
+    { new: true }
+  );
+
+  if (!updatedItem) {
+    res.status(404);
+    throw new Error('Inventory item not found or unauthorized');
+  }
+
+  res.json(updatedItem);
 });
 
-// 🔄 UPDATE customer order status
+
+export const getCustomerOrders = asyncHandler(async (req, res) => {
+  if (!req.user || !req.user._id || req.user.role !== 'butcher') {
+    res.status(401);
+    throw new Error('Not authorized, butcher user ID not found or not a butcher');
+  }
+
+  const orders = await Order.find({ butcherId: req.user._id })
+    .populate({
+      path: 'customerId', 
+      model: 'User',
+      select: 'name email' 
+    })
+    .populate({
+      path: 'meatId', 
+      model: 'Inventory',
+      select: 'meatType pricePerKg' 
+    })
+    .sort({ createdAt: -1 });
+
+  
+  const formattedOrders = orders.map(order => ({
+    _id: order._id,
+    customerId: order.customerId?._id,
+    customerName: order.customerId?.name || 'Unknown Customer',
+    customerEmail: order.customerId?.email || 'N/A',
+    butcherId: order.butcherId,
+    butcheryName: order.butcheryName,
+    meatId: order.meatId?._id,
+    meatType: order.meatType, 
+    pricePerKgAtOrder: order.pricePerKgAtOrder, 
+    quantity: order.quantity,
+    totalPrice: order.totalPrice,
+    status: order.status,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    // Add any other fields you want to expose to the frontend
+  }));
+
+  res.json({ orders: formattedOrders });
+});
+
+
 export const updateOrderStatus = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const { status } = req.body;
 
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
-    res.status(401);
-    throw new Error('Not authorized, user ID not found');
+  if (!status) {
+    res.status(400);
+    throw new Error('Order status is required');
+  }
+
+  const allowedStatuses = ['pending', 'processing', 'ready', 'delivered', 'cancelled'];
+  if (!allowedStatuses.includes(status)) {
+    res.status(400);
+    throw new Error(`Invalid status. Allowed values are: ${allowedStatuses.join(', ')}`);
   }
 
   const updatedOrder = await Order.findOneAndUpdate(
-    { _id: orderId, butcherId: req.user._id }, // Filter by butcherId for security
-    { status },
+    { _id: orderId, butcherId: req.user._id }, 
+    { status, updatedAt: Date.now() }, 
     { new: true }
   );
 
@@ -144,91 +163,84 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found or unauthorized');
   }
 
-  res.json({ message: `Order updated`, order: updatedOrder });
+  res.json(updatedOrder);
 });
 
-// 📦 GET orders this butcher made to slaughterhouses
 export const getSlaughterhouseOrders = asyncHandler(async (req, res) => {
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
+  if (!req.user || !req.user._id || req.user.role !== 'butcher') {
     res.status(401);
-    throw new Error('Not authorized, user ID not found');
+    throw new Error('Not authorized, butcher user ID not found or not a butcher');
   }
-  console.log('--- getSlaughterhouseOrders called ---');
-  console.log('Fetching orders for buyerId (butcher):', req.user._id);
-  console.log('Fetching orders for buyerType:', 'butcher');
 
   const orders = await Purchase.find({
     buyerType: 'butcher',
     buyerId: req.user._id,
-  }).sort({ createdAt: -1 });
+  })
+  .populate({
+    path: 'meatId',
+    model: 'Inventory',
+    select: 'meatType slaughterhouseName' 
+  })
+  .sort({ createdAt: -1 });
 
-  console.log('Resulting slaughterhouse orders from DB:', orders);
-  res.json({ orders });
+
+  const formattedOrders = orders.map(order => ({
+    _id: order._id,
+    meatId: order.meatId?._id,
+    meatType: order.meatId?.meatType || order.meatType, 
+    quantity: order.quantity,
+    buyerType: order.buyerType,
+    buyerId: order.buyerId,
+    status: order.status,
+    slaughterhouseName: order.meatId?.slaughterhouseName || order.slaughterhouseName || 'N/A', 
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  }));
+
+  res.json({ orders: formattedOrders });
 });
 
-// 🛒 PLACE order from slaughterhouse
+
 export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
   const { meatId, quantity } = req.body;
 
-  console.log('--- orderFromSlaughterhouse called ---');
-  console.log('Request Body (meatId, quantity):', { meatId, quantity });
-  console.log('Authenticated User ID (req.user._id):', req.user?._id);
-  console.log('Authenticated User Role (req.user.role):', req.user?.role);
-
-
-  // Validate meatId and quantity
   if (!meatId || !quantity || quantity <= 0) {
     res.status(400);
     throw new Error('Meat ID and a valid quantity are required.');
   }
-
-  // Ensure req.user exists for authorization
-  if (!req.user || !req.user._id) {
+  if (!req.user || !req.user._id || req.user.role !== 'butcher') {
     res.status(401);
-    throw new Error('Not authorized, user ID not found');
+    throw new Error('Not authorized, user is not a butcher or ID not found');
   }
 
-  // Find the meat available from slaughterhouse
-  const availableMeat = await Inventory.findById(meatId);
-  console.log('Found Available Meat for Order:', availableMeat);
+  const meatToPurchase = await Inventory.findOne({
+    _id: meatId,
+    isPublic: true,
+    ownerType: 'agent' 
+  });
 
-  // IMPORTANT: You might need to update this logic if your Inventory model
-  // doesn't have an ownerType/ownerId, or if it's not clear which inventory
-  // belongs to a slaughterhouse. This assumes slaughterhouse-owned inventory
-  // has ownerType 'agent'.
-  if (!availableMeat || (availableMeat.ownerType && availableMeat.ownerType !== 'agent')) {
+  if (!meatToPurchase) {
     res.status(404);
-    throw new Error('Meat not found or not available from a slaughterhouse (must be owned by agent).');
+    throw new Error('Meat not found or not available for purchase (not public or not from an agent).');
   }
 
-  if (availableMeat.quantity < quantity) {
+  if (meatToPurchase.quantity < quantity) {
     res.status(400);
-    throw new Error('Requested quantity exceeds available stock from slaughterhouse.');
+    throw new Error(`Requested quantity (${quantity}kg) exceeds available stock (${meatToPurchase.quantity}kg).`);
   }
 
-  // Create a new Purchase order
   const newPurchase = new Purchase({
     meatId,
     quantity,
-    buyerType: 'butcher', // The buyer is a butcher
-    buyerId: req.user._id, // Assign butcher's ID as the buyer
-    status: 'pending', // Initial status for butcher's purchase order
-    meatType: availableMeat.meatType,
-    slaughterhouseName: availableMeat.slaughterhouseName, // Name of the slaughterhouse from whom it's purchased
+    buyerType: 'butcher', 
+    buyerId: req.user._id,
+    status: 'pending', 
+    meatType: meatToPurchase.meatType, 
+    slaughterhouseName: meatToPurchase.slaughterhouseName, 
   });
 
-  console.log('New Purchase Object before saving:', newPurchase);
   await newPurchase.save();
-  console.log('New Purchase Object AFTER saving:', newPurchase);
 
-  // Optionally, reduce the slaughterhouse's inventory
-  // This part is commented out but would be a critical next step for real inventory management:
-  /*
-  availableMeat.quantity -= quantity;
-  await availableMeat.save();
-  console.log('Updated availableMeat after purchase (if uncommented):', availableMeat);
-  */
 
-  res.status(201).json({ message: 'Order placed successfully with slaughterhouse', order: newPurchase });
+  res.status(201).json({ message: 'Purchase order to slaughterhouse placed successfully!', order: newPurchase });
 });
