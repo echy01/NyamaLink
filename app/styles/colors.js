@@ -1,13 +1,17 @@
 const COLORS = {
-  primary: '#d32f2f', // meat red
-  accent: '#fff3e0',
-  textDark: '#212121',
-  textLight: '#757575',
-  bg: '#ffffff',
-  card: '#fefefe',
-  border: '#e0e0e0',
-  success: '#388e3c',
-  warning: '#fbc02d',
+  primary: '#D32F2F', 
+  secondary: '#FFCDD2', 
+  accent: '#007BFF', 
+  textDark: '#212121', 
+  textLight: '#555555', 
+  bg: '#F8F8F8', 
+  card: '#FFFFFF',
+  border: '#E0E0E0', 
+  success: '#4CAF50', 
+  warning: '#FFC107',
+  danger: '#DC3545', 
+  info: '#17A2B8', 
+  lightGrey: '#F0F0F0',
 };
 
 export default COLORS;

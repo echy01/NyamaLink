@@ -27,8 +27,15 @@ const ButcherCustomerOrdersScreen = () => {
   const [showUpdateOrderModal, setShowUpdateOrderModal] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [newOrderStatus, setNewOrderStatus] = useState('');
+  // Dispatch details for customer order
+  const [customerOrderTrackingNumber, setCustomerOrderTrackingNumber] = useState('');
+  const [customerOrderCarrier, setCustomerOrderCarrier] = useState('');
+  const [customerOrderEstimatedDeliveryDate, setCustomerOrderEstimatedDeliveryDate] = useState(''); 
+  // Delivery confirmation for customer order
+  const [customerOrderReceivedBy, setCustomerOrderReceivedBy] = useState('');
 
-  const ORDER_STATUS_OPTIONS = ['pending', 'processing', 'ready', 'delivered', 'cancelled']; 
+  // Define allowed order statuses for the butcher to choose from
+  const CUSTOMER_ORDER_STATUS_OPTIONS = ['pending', 'accepted', 'processing', 'ready_for_pickup', 'dispatched', 'arrived', 'completed', 'cancelled']; 
 
   const fetchCustomerOrders = useCallback(async () => {
     setRefreshing(true);
@@ -53,14 +60,46 @@ const ButcherCustomerOrdersScreen = () => {
     if (!currentOrder || !newOrderStatus) {
       return Alert.alert('Validation Error', 'Please select an order and status.');
     }
-    if (!ORDER_STATUS_OPTIONS.includes(newOrderStatus)) {
-        return Alert.alert('Invalid Status', 'Please select a valid status: ' + ORDER_STATUS_OPTIONS.join(', '));
+    if (!CUSTOMER_ORDER_STATUS_OPTIONS.includes(newOrderStatus)) {
+        return Alert.alert('Invalid Status', 'Please select a valid status: ' + CUSTOMER_ORDER_STATUS_OPTIONS.join(', '));
     }
+
+    const dispatchDetails = {};
+    const deliveryConfirmation = {};
+
+    // Collect dispatch details if status implies dispatch
+    if (newOrderStatus === 'dispatched' || newOrderStatus === 'arrived' || newOrderStatus === 'completed') {
+      if (!customerOrderTrackingNumber || !customerOrderCarrier || !customerOrderEstimatedDeliveryDate) {
+        return Alert.alert('Validation Error', 'Tracking number, carrier, and estimated delivery date are required for dispatched/arrived/completed status.');
+      }
+      dispatchDetails.trackingNumber = customerOrderTrackingNumber;
+      dispatchDetails.carrier = customerOrderCarrier;
+      dispatchDetails.estimatedDeliveryDate = new Date(customerOrderEstimatedDeliveryDate).toISOString(); 
+    }
+
+    // Collect delivery confirmation if status implies delivery
+    if (newOrderStatus === 'arrived' || newOrderStatus === 'completed') {
+      if (!customerOrderReceivedBy) {
+        return Alert.alert('Validation Error', 'Received by is required for arrived/completed status.');
+      }
+      deliveryConfirmation.receivedBy = customerOrderReceivedBy;
+    }
+
     try {
-      await api.updateOrderStatus(currentOrder._id, newOrderStatus);
+      await api.updateCustomerOrderStatus(
+        currentOrder._id,
+        newOrderStatus,
+        Object.keys(dispatchDetails).length > 0 ? dispatchDetails : undefined, 
+        Object.keys(deliveryConfirmation).length > 0 ? deliveryConfirmation : undefined
+      );
       setShowUpdateOrderModal(false);
       setCurrentOrder(null);
       setNewOrderStatus('');
+      // Clear dispatch/delivery states after successful update
+      setCustomerOrderTrackingNumber('');
+      setCustomerOrderCarrier('');
+      setCustomerOrderEstimatedDeliveryDate('');
+      setCustomerOrderReceivedBy('');
       fetchCustomerOrders(); 
       Alert.alert('Success', 'Order status updated successfully!');
     } catch (err) {
@@ -88,18 +127,43 @@ const ButcherCustomerOrdersScreen = () => {
                   icon="receipt-outline"
                   title={`Customer: ${String(item.customerName || 'N/A')}`}
                   value={`Order for: ${String(item.meatType || 'N/A')} | Quantity: ${String(item.quantity || '0')}kg`}
-                  subtitle={`Status: ${String(item.status || 'N/A')} | Total: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}
+                  subtitle={
+                    <Text>
+                      <Text style={{fontWeight: 'bold'}}>Status:</Text> {String(item.status || 'N/A')}
+                      {item.dispatchDetails && item.dispatchDetails.trackingNumber && (
+                        `\nTracking: ${String(item.dispatchDetails.trackingNumber)}`
+                      )}
+                      {item.dispatchDetails && item.dispatchDetails.carrier && (
+                        `\nCarrier: ${String(item.dispatchDetails.carrier)}`
+                      )}
+                      {item.dispatchDetails && item.dispatchDetails.estimatedDeliveryDate && (
+                        `\nEst. Delivery: ${new Date(item.dispatchDetails.estimatedDeliveryDate).toLocaleDateString()}`
+                      )}
+                      {item.deliveryConfirmation && item.deliveryConfirmation.receivedBy && (
+                        `\nReceived By: ${String(item.deliveryConfirmation.receivedBy)}`
+                      )}
+                      {item.deliveryConfirmation && item.deliveryConfirmation.receivedDate && (
+                        ` on ${new Date(item.deliveryConfirmation.receivedDate).toLocaleDateString()}`
+                      )}
+                      {`\nTotal: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}
+                    </Text>
+                  }
                 >
                   <View style={localStyles.cardActions}>
                     <TouchableOpacity
                       style={[
                         globalStyles.button,
                         localStyles.smallActionButton,
-                        { backgroundColor: item.status === 'delivered' ? COLORS.success : COLORS.warning }
+                        { backgroundColor: item.status === 'completed' ? COLORS.success : COLORS.warning } // Use 'completed'
                       ]}
                       onPress={() => {
                         setCurrentOrder(item);
                         setNewOrderStatus(String(item.status)); 
+                        // Populate existing dispatch/delivery details if available
+                        setCustomerOrderTrackingNumber(item.dispatchDetails?.trackingNumber || '');
+                        setCustomerOrderCarrier(item.dispatchDetails?.carrier || '');
+                        setCustomerOrderEstimatedDeliveryDate(item.dispatchDetails?.estimatedDeliveryDate ? new Date(item.dispatchDetails.estimatedDeliveryDate).toISOString().split('T')[0] : ''); // Format to YYYY-MM-DD
+                        setCustomerOrderReceivedBy(item.deliveryConfirmation?.receivedBy || '');
                         setShowUpdateOrderModal(true);
                       }}
                     >
@@ -121,17 +185,56 @@ const ButcherCustomerOrdersScreen = () => {
       <Modal visible={showUpdateOrderModal} animationType="slide" transparent={true}>
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Update Order Status</Text>
+            <Text style={localStyles.modalTitle}>Update Customer Order Status</Text>
             {currentOrder && (
               <Text style={localStyles.modalSubtitle}>Order for {String(currentOrder.customerName || 'N/A')} ({String(currentOrder.meatType || 'N/A')})</Text>
             )}
-            {/* Using a TextInput for status update, could be replaced by a Picker for better UX */}
             <TextInput
               style={globalStyles.input}
-              placeholder="New Status (e.g., processing, ready, delivered, cancelled)"
+              placeholder="New Status (e.g., accepted, processing, dispatched, completed)"
               value={newOrderStatus}
               onChangeText={setNewOrderStatus}
             />
+
+            {/* Conditional Inputs for Dispatch Details */}
+            {(newOrderStatus === 'dispatched' || newOrderStatus === 'arrived' || newOrderStatus === 'completed') && (
+              <>
+                <Text style={localStyles.sectionHeaderSmall}>Dispatch Details:</Text>
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Tracking Number (Optional)"
+                  value={customerOrderTrackingNumber}
+                  onChangeText={setCustomerOrderTrackingNumber}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Carrier (e.g., In-house, G4S)"
+                  value={customerOrderCarrier}
+                  onChangeText={setCustomerOrderCarrier}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Estimated Delivery Date (YYYY-MM-DD)"
+                  value={customerOrderEstimatedDeliveryDate}
+                  onChangeText={setCustomerOrderEstimatedDeliveryDate}
+                  keyboardType="numeric" // Use date picker in real app
+                />
+              </>
+            )}
+
+            {/* Conditional Inputs for Delivery Confirmation */}
+            {(newOrderStatus === 'arrived' || newOrderStatus === 'completed') && (
+              <>
+                <Text style={localStyles.sectionHeaderSmall}>Delivery Confirmation:</Text>
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Received By (Name or ID)"
+                  value={customerOrderReceivedBy}
+                  onChangeText={setCustomerOrderReceivedBy}
+                />
+              </>
+            )}
+
             <View style={localStyles.modalButtons}>
               <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowUpdateOrderModal(false)}>
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
@@ -208,6 +311,13 @@ const localStyles = StyleSheet.create({
   modalButton: {
     flex: 1,
     marginHorizontal: 5,
+  },
+  sectionHeaderSmall: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textDark,
+    marginTop: 10,
+    marginBottom: 5,
   },
 });
 

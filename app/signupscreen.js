@@ -1,9 +1,9 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  Alert,
+  Alert, 
   Dimensions,
   ScrollView,
   StyleSheet,
@@ -11,23 +11,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator, 
 } from "react-native";
+
+import globalStyles from './styles/globalStyles';
+import COLORS from './styles/colors';
+import api from './api';
 
 const { width } = Dimensions.get("window");
 
 const roles = ["customer", "butcher", "agent"];
-
-const COLORS = {
-  primary: "#FF746C",
-  secondary: "#FF5A52",
-  accent: "#E63946",
-  buttonStart: "#DC2626",
-  buttonMid: "#B91C1C",
-  buttonEnd: "#991B1B",
-  white: "#FFFFFF",
-  textLight: "rgba(255, 255, 255, 0.95)",
-  shadow: "#000000",
-};
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -36,186 +29,179 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(false); 
 
   const handleSignUp = async () => {
     if (!name || !email || !password || !confirmPassword || !role) {
-      return Alert.alert("Error", "Please fill in all fields.");
-    }
-
-    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return Alert.alert("Error", "Enter a valid email address.");
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
     }
 
     if (password !== confirmPassword) {
-      return Alert.alert("Error", "Passwords do not match.");
+      Alert.alert("Error", "Passwords do not match.");
+      return;
     }
 
+    setLoading(true); 
     try {
-      const response = await fetch(
-        "http://10.71.135.198:5000/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role }),
-        }
-      );
+      const response = await api.signup({ name, email, password, role });
+      
+      const { token, role: userRole, name: userName } = response.data; 
 
-      const data = await response.json();
+      await Alert.alert("Success", "Account created successfully! Please log in.");
+      router.replace('/loginscreen'); 
 
-      if (!response.ok) {
-        return Alert.alert(
-          "Signup Error",
-          data.message || "Failed to create account"
-        );
-      }
-
-      Alert.alert("Success", "Account created successfully!");
-      router.push("/loginscreen");
     } catch (error) {
-      console.error("Signup API error:", error);
-      Alert.alert(
-        "Error",
-        "Unable to connect to server. Please try again later."
-      );
+      console.error("Sign Up error:", error.response?.data || error.message);
+      Alert.alert("Sign Up Failed", error.response?.data?.message || "Failed to create account. Please try again.");
+    } finally {
+      setLoading(false); 
     }
   };
 
   return (
-    <LinearGradient
-      colors={[COLORS.primary, COLORS.secondary, COLORS.accent]}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <MaterialIcons
-            name="arrow-back"
-            size={28}
-            color={COLORS.white}
-            onPress={() => router.back()}
-            style={styles.backButton}
-          />
-          <Text style={styles.title}>Create an Account</Text>
-        </View>
+    <View style={localStyles.safeArea}>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.danger, '#8B0000']} 
+        style={localStyles.gradientContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <TouchableOpacity onPress={() => router.replace('/')} style={localStyles.backButton}>
+          <MaterialIcons name="arrow-back" size={28} color={COLORS.white} />
+        </TouchableOpacity>
 
-        <View style={styles.formContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={name}
-            onChangeText={setName}
-          />
+        <ScrollView contentContainerStyle={localStyles.scrollContent}>
+          <Text style={localStyles.title}>Create Account</Text>
+          <Text style={localStyles.subtitle}>Join us today!</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email Address"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={localStyles.formContainer}>
+            <TextInput
+              style={localStyles.input}
+              placeholder="Full Name"
+              placeholderTextColor={COLORS.textLight}
+              autoCapitalize="words"
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              style={localStyles.input}
+              placeholder="Email"
+              placeholderTextColor={COLORS.textLight}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={localStyles.input}
+              placeholder="Password"
+              placeholderTextColor={COLORS.textLight}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TextInput
+              style={localStyles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor={COLORS.textLight}
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
-
-          <Text style={styles.label}>Select Your Role:</Text>
-          <View style={styles.roles}>
-            {roles.map((r) => (
-              <TouchableOpacity
-                key={r}
-                style={[styles.roleButton, role === r && styles.selectedRole]}
-                onPress={() => setRole(r)}
-              >
-                <Text
-                  style={role === r ? styles.selectedRoleText : styles.roleText}
+            <Text style={localStyles.label}>Select Your Role:</Text>
+            <View style={localStyles.roles}>
+              {roles.map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[localStyles.roleButton, role === r && localStyles.selectedRole]}
+                  onPress={() => setRole(r)}
                 >
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Text style={[localStyles.roleText, role === r && localStyles.selectedRoleText]}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <TouchableOpacity style={styles.signupButton} onPress={handleSignUp}>
-            <LinearGradient
-              colors={[COLORS.buttonStart, COLORS.buttonMid, COLORS.buttonEnd]}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+            <TouchableOpacity 
+              style={[localStyles.signupButton, loading && {opacity: 0.7}]}
+              onPress={handleSignUp}
+              disabled={loading}
             >
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              {loading ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={localStyles.buttonText}>Sign Up</Text>
+              )}
+            </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/loginscreen")}>
-            <Text style={styles.loginLink}>
-              Already have an account?{" "}
-              <Text style={styles.loginLinkBold}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </LinearGradient>
+            <TouchableOpacity onPress={() => router.replace('/loginscreen')}>
+              <Text style={localStyles.loginText}>
+                Already have an account? <Text style={localStyles.loginLink}>Log In</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+const localStyles = StyleSheet.create({
+  safeArea: {
     flex: 1,
+    backgroundColor: COLORS.bg,
   },
-  scrollContainer: {
+  gradientContainer: {
+    flex: 1,
+    paddingTop: 80, 
+  },
+  scrollContent: {
     flexGrow: 1,
-    paddingBottom: 40,
-  },
-  header: {
-    marginTop: 60,
-    marginBottom: 30,
-    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingBottom: 40, 
   },
   backButton: {
     position: "absolute",
-    left: 24,
-    top: 0,
+    left: 20,
+    top: 50,
+    zIndex: 1,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "bold",
     color: COLORS.white,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: COLORS.secondary,
+    textAlign: "center",
+    marginBottom: 40,
+    fontWeight: '500',
   },
   formContainer: {
-    paddingHorizontal: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   input: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
     color: COLORS.white,
     fontSize: 16,
+    fontWeight: '500',
   },
   label: {
     fontSize: 16,
@@ -252,34 +238,31 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   signupButton: {
+    backgroundColor: COLORS.accent, 
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 10,
-    marginBottom: 20,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 12,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 8,
   },
-  buttonGradient: {
-    paddingVertical: 16,
-    borderRadius: 30,
-    alignItems: "center",
-  },
-  signupButtonText: {
+  buttonText: {
     color: COLORS.white,
     fontSize: 18,
     fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
   },
-  loginLink: {
+  loginText: {
     color: COLORS.textLight,
     textAlign: "center",
-    marginTop: 12,
+    marginTop: 20,
     fontSize: 15,
   },
-  loginLinkBold: {
+  loginLink: {
+    color: COLORS.secondary,
     fontWeight: "bold",
-    color: COLORS.white,
   },
 });

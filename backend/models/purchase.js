@@ -13,7 +13,7 @@ const PurchaseSchema = new mongoose.Schema({
   },
   buyerType: {
     type: String,
-    enum: ['butcher', 'agent', 'customer'], 
+    enum: ['butcher', 'agent'], 
     required: true
   },
   buyerId: {
@@ -23,7 +23,7 @@ const PurchaseSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'cancelled'], 
+    enum: ['pending', 'accepted', 'processing', 'ready_for_dispatch', 'dispatched', 'arrived', 'completed', 'cancelled'], // Expanded statuses
     default: 'pending'
   },
   meatType: { 
@@ -34,10 +34,44 @@ const PurchaseSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+
+  dispatchDetails: {
+    trackingNumber: { type: String },
+    carrier: { type: String }, // e.g., "In-house delivery", "Third-party Courier"
+    dispatchDate: { type: Date },
+    estimatedDeliveryDate: { type: Date },
+  },
+
+  paymentStatus: {
+    status: {
+      type: String,
+      enum: ['unpaid', 'pending', 'paid', 'refunded', 'failed'],
+      default: 'unpaid'
+    },
+    transactionId: { type: String }, 
+    paymentGateway: { type: String },
+    paymentDate: { type: Date },
+    amountPaid: { type: Number },
+  },
+
+  deliveryConfirmation: {
+    receivedBy: { type: String }, 
+    receivedDate: { type: Date },
+  },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
+});
+
+
+PurchaseSchema.pre('save', function (next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 const Purchase = mongoose.model('Purchase', PurchaseSchema);

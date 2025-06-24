@@ -1,85 +1,102 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const BASE_URL = "http://10.71.135.198:5000/api";
+const API_BASE_URL = "http://192.168.100.48:5000/api";
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+const instance = axios.create({
+  baseURL: API_BASE_URL,
 });
 
-api.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+instance.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// --- Auth Endpoints ---
-const register = (userData) => api.post("/auth/register", userData);
-const login = (userData) => api.post("/auth/login", userData);
-const getProfile = () => api.get("/auth/profile");
+const api = {
+  //  Auth Endpoints
+  login: (credentials) => instance.post("/auth/login", credentials),
+  signup: (data) => instance.post("/auth/register", data),
+  getProfile: () => instance.get("/auth/profile"),
 
-// --- Agent Endpoints ---
-const getSlaughterhouseInventory = () => api.get("/agent/inventory");
-const addSlaughterhouseInventory = (itemData) =>
-  api.post("/agent/inventory", itemData);
-const getButcheryOrders = () => api.get("/agent/orders");
-const getButchers = () => api.get("/agent/butchers");
-const getMyPurchaseOrders = () => api.get("/agent/purchase/myorders");
-const getAvailableMeatForPurchase = () => api.get("/agent/purchase/available");
-const placeMeatOrderToSlaughterhouse = (meatId, quantity) =>
-  api.post("/agent/purchase/order", { meatId, quantity });
+  //  Agent (Slaughterhouse) Endpoints
+  getSlaughterhouseInventory: () => instance.get("/agent/inventory"),
+  addSlaughterhouseInventory: (itemData) =>
+    instance.post("/agent/inventory", itemData),
+  getButcheryOrders: () => instance.get("/agent/orders"),
+  getButchers: () => instance.get("/agent/butchers"),
+  getMyPurchaseOrders: () => instance.get("/agent/purchase/myorders"),
+  getAvailableMeatForPurchase: () => instance.get("/agent/purchase/available"),
+  placeMeatOrderToSlaughterhouse: (meatId, quantity) =>
+    instance.post("/agent/purchase/order", { meatId, quantity }),
+  // New Agent actions for Purchases (butcher orders to agent's slaughterhouse)
+  updateButcherOrderStatus: (
+    purchaseId,
+    status,
+    dispatchDetails = {},
+    deliveryConfirmation = {}
+  ) =>
+    instance.put(`/agent/orders/${purchaseId}/status`, {
+      status,
+      dispatchDetails,
+      deliveryConfirmation,
+    }),
 
-// --- Butcher Endpoints ---
-const getButcherInventory = () => api.get("/butcher/inventory");
-const addInventoryItem = (itemData) =>
-  api.post("/butcher/inventory/add", itemData);
-const updateInventoryItem = (itemId, itemData) =>
-  api.put(`/butcher/inventory/${itemId}`, itemData);
-const updateInventoryStock = (itemId, stock) =>
-  api.put(`/butcher/inventory/${itemId}/stock`, { stock });
-const getCustomerOrdersForButcher = () => api.get("/butcher/customer-orders");
-const updateOrderStatus = (orderId, status) =>
-  api.put(`/butcher/orders/${orderId}/status`, { status });
-const getSlaughterhouseOrders = () => api.get("/butcher/slaughterhouse-orders");
-const orderFromSlaughterhouse = (meatId, quantity) =>
-  api.post("/butcher/order-from-slaughterhouse", { meatId, quantity });
+  //  Butcher Endpoints
+  getButcherInventory: () => instance.get("/butcher/inventory"),
+  addInventoryItem: (itemData) =>
+    instance.post("/butcher/inventory/add", itemData),
+  updateInventoryItem: (itemId, updates) =>
+    instance.put(`/butcher/inventory/${itemId}`, updates),
+  updateInventoryStock: (itemId, stock) =>
+    instance.put(`/butcher/inventory/${itemId}/stock`, { stock }),
+  getCustomerOrdersForButcher: () => instance.get("/butcher/customer-orders"),
+  updateCustomerOrderStatus: (
+    orderId,
+    status,
+    dispatchDetails = {},
+    deliveryConfirmation = {}
+  ) =>
+    instance.put(`/butcher/customer-orders/${orderId}/status`, {
+      status,
+      dispatchDetails,
+      deliveryConfirmation,
+    }),
+  getSlaughterhouseOrders: () => instance.get("/butcher/slaughterhouse-orders"),
+  orderFromSlaughterhouse: (meatId, quantity) =>
+    instance.post("/butcher/order-from-slaughterhouse", { meatId, quantity }),
+  // New Butcher actions for Slaughterhouse orders (butcher's own purchases)
+  updateSlaughterhouseOrderStatus: (
+    purchaseId,
+    status,
+    dispatchDetails = {},
+    deliveryConfirmation = {}
+  ) =>
+    instance.put(`/butcher/slaughterhouse-orders/${purchaseId}/status`, {
+      status,
+      dispatchDetails,
+      deliveryConfirmation,
+    }),
 
-// --- Customer Endpoints (NEW) ---
-const getAvailableMeatForCustomers = () => api.get("/customer/available-meat");
-const placeCustomerOrder = (meatId, quantity) =>
-  api.post("/customer/place-order", { meatId, quantity });
-const getMyCustomerOrders = () => api.get("/customer/my-orders");
+  //  Customer Endpoints
+  getAvailableMeatForCustomers: () => instance.get("/customer/available-meat"),
+  placeCustomerOrder: (meatId, quantity) =>
+    instance.post("/customer/place-order", { meatId, quantity }),
+  getMyCustomerOrders: () => instance.get("/customer/my-orders"),
+  // New Customer actions for their own orders
+  updateMyCustomerOrderStatus: (orderId, status, deliveryConfirmation = {}) =>
+    instance.put(`/customer/my-orders/${orderId}/status`, {
+      status,
+      deliveryConfirmation,
+    }),
 
-export default {
-  register,
-  login,
-  getProfile,
-  getSlaughterhouseInventory,
-  addSlaughterhouseInventory,
-  getButcheryOrders,
-  getButchers,
-  getMyPurchaseOrders,
-  getAvailableMeatForPurchase,
-  placeMeatOrderToSlaughterhouse,
-  getButcherInventory,
-  addInventoryItem,
-  updateInventoryItem,
-  updateInventoryStock,
-  getCustomerOrdersForButcher,
-  updateOrderStatus,
-  getSlaughterhouseOrders,
-  orderFromSlaughterhouse,
-  getAvailableMeatForCustomers,
-  placeCustomerOrder,
-  getMyCustomerOrders,
+  //  Payment Endpoints (Placeholders for Paystack integration)
+  initializePayment: (orderId, amount, email) =>
+    instance.post(`/payment/initialize`, { orderId, amount, email }),
+  verifyPayment: (transactionRef) =>
+    instance.get(`/payment/verify/${transactionRef}`),
 };
+
+export default api;

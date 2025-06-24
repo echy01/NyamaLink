@@ -1,3 +1,4 @@
+// app/agent/inventory.js
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -8,24 +9,24 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Alert,
+  Alert, 
   Image,
-  ActivityIndicator,
+  ActivityIndicator, 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; 
-import InfoCard from '../../components/InfoCard';     
-import api from '../api';                         
-import COLORS from '../styles/colors';             
-import { useLocalSearchParams } from 'expo-router'; 
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
+import { useLocalSearchParams } from 'expo-router';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.png.jpeg';
+import chicken from '../../assets/images/chicken.jpeg'; 
 import pork from '../../assets/images/pork.jpeg';
 import lamb from '../../assets/images/lamb.png';
-import meatDefault from '../../assets/images/meat_default.jpeg';
+import meatDefault from '../../assets/images/meat_default.jpeg'; 
 
 const meatImages = {
   beef: beef,
@@ -44,28 +45,19 @@ const AgentInventoryScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
-  const [newInventoryItem, setNewInventoryItem] = useState({
-    meatType: '',
-    quantity: '',
-    pricePerKg: '',
-    slaughterhouseName: userName || '', 
-    isPublic: false,
-  });
-
-  useEffect(() => {
-    if (userName && newInventoryItem.slaughterhouseName !== userName) {
-      setNewInventoryItem(prev => ({ ...prev, slaughterhouseName: userName }));
-    }
-  }, [userName, newInventoryItem.slaughterhouseName]);
-
+  // Add Item Modal state
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemType, setNewItemType] = useState(''); // e.g., beef, chicken, lamb
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemPricePerKg, setNewItemPricePerKg] = useState('');
 
   const fetchInventory = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const invRes = await api.getSlaughterhouseInventory();
-      setInventory(Array.isArray(invRes.data) ? invRes.data : []);
+      const inventoryRes = await api.getSlaughterhouseInventory();
+      setInventory(Array.isArray(inventoryRes.data?.inventory) ? inventoryRes.data.inventory : []);
     } catch (err) {
       console.error('❌ Agent Inventory Load Error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load inventory data. Please try again.');
@@ -75,55 +67,47 @@ const AgentInventoryScreen = () => {
     }
   }, []);
 
+  const handleAddItem = async () => {
+    if (!newItemName || !newItemType || !newItemQuantity || !newItemPricePerKg) {
+      Alert.alert('Error', 'Please fill in all fields to add a new item.');
+      return;
+    }
+    const quantity = parseFloat(newItemQuantity);
+    const pricePerKg = parseFloat(newItemPricePerKg);
+
+    if (isNaN(quantity) || isNaN(pricePerKg) || quantity <= 0 || pricePerKg <= 0) {
+      Alert.alert('Error', 'Quantity and Price per Kg must be positive numbers.');
+      return;
+    }
+
+    setShowAddItemModal(false); 
+    try {
+      await api.addSlaughterhouseInventory({
+        name: newItemName,
+        meatType: newItemType.toLowerCase(),
+        quantity,
+        pricePerKg,
+      });
+      Alert.alert('Success', `${newItemName} added to inventory.`);
+      setNewItemName('');
+      setNewItemType('');
+      setNewItemQuantity('');
+      setNewItemPricePerKg('');
+      fetchInventory();
+    } catch (err) {
+      console.error('❌ Add Item Error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to add item. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchInventory();
   }, [fetchInventory]);
 
-  const handleAddInventoryItem = async () => {
-    if (!newInventoryItem.meatType || !newInventoryItem.quantity || !newInventoryItem.pricePerKg) {
-      return Alert.alert('Validation Error', 'Please fill all required fields: Meat Type, Quantity, and Price.');
-    }
-
-    if (!newInventoryItem.slaughterhouseName) {
-        return Alert.alert('Error', 'Slaughterhouse name is missing. Please ensure your user profile is complete.');
-    }
-
-    try {
-      await api.addSlaughterhouseInventory({
-        meatType: newInventoryItem.meatType,
-        quantity: parseFloat(newInventoryItem.quantity),
-        pricePerKg: parseFloat(newInventoryItem.pricePerKg),
-        slaughterhouseName: newInventoryItem.slaughterhouseName,
-        isPublic: newInventoryItem.isPublic,
-      });
-      setNewInventoryItem(prev => ({ ...prev, meatType: '', quantity: '', pricePerKg: '', isPublic: false })); // Reset form
-      setShowAddInventoryModal(false);
-      fetchInventory(); 
-      Alert.alert('Success', 'Inventory item added successfully!');
-    } catch (err) {
-      Alert.alert('Add Inventory Error', err.response?.data?.message || err.message || 'Failed to add inventory item.');
-      console.error('Add Inventory Error:', err.response?.data || err.message);
-    }
-  };
-
-  const getMeatImage = (meatType) => {
-    const lowerMeatType = (meatType || '').toLowerCase();
-    if (meatImages[lowerMeatType]) {
-      return meatImages[lowerMeatType];
-    }
-    return meatImages.default;
-  };
 
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={localStyles.contentContainer}>
-        <TouchableOpacity
-          style={globalStyles.button}
-          onPress={() => setShowAddInventoryModal(true)}
-        >
-          <Ionicons name="add-circle-outline" size={20} color="#fff" />
-          <Text style={globalStyles.buttonText}>Add New Meat</Text>
-        </TouchableOpacity>
         {loading && !refreshing ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (
@@ -131,83 +115,96 @@ const AgentInventoryScreen = () => {
             data={inventory}
             renderItem={({ item }) => {
               if (!item || !item._id) {
-                console.warn("Skipping malformed inventory item:", item);
+                console.warn("Skipping malformed item:", item);
                 return null;
               }
+
+              const meatImageSource = meatImages[item.meatType?.toLowerCase()] || meatImages.default;
+
               return (
                 <InfoCard
-                  title={String(item.meatType)}
-                  value={`Stock: ${String(item.quantity)}kg @ KES ${String(item.pricePerKg)}/kg`}
-                  subtitle={`Slaughterhouse: ${String(item.slaughterhouseName)} | Public: ${item.isPublic ? 'Yes' : 'No'}`}
-                  imageSource={getMeatImage(item.meatType)}
+                  icon={
+                    <Image
+                      source={meatImageSource}
+                      style={globalStyles.infoCardImage} 
+                    />
+                  }
+                  title={String(item.name)}
+                  value={`Type: ${String(item.meatType)} | Quantity: ${String(item.quantity)}kg`}
+                  subtitle={`Price: KES ${String(item.pricePerKg)}/kg | Added: ${new Date(item.createdAt).toLocaleDateString()}`}
                 >
-                  {/* Add edit/delete actions if needed for inventory items */}
+                  {/* Additional actions for each item could go here */}
                 </InfoCard>
               );
             }}
-            keyExtractor={(item) => String(item._id || item.meatType + item.slaughterhouseName)}
+            keyExtractor={(item) => String(item._id)}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchInventory} />}
             ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No inventory items found.</Text>}
           />
         )}
       </View>
 
-      {/* Add Inventory Modal */}
-      <Modal visible={showAddInventoryModal} animationType="slide" transparent={true}>
+      {/* Button to add new item */}
+      <TouchableOpacity
+        style={[globalStyles.button, { margin: 16, marginBottom: 24 }]} 
+        onPress={() => setShowAddItemModal(true)}
+      >
+        <Ionicons name="add-circle-outline" size={24} color={COLORS.white} style={{ marginRight: 8 }} />
+        <Text style={globalStyles.buttonText}>Add New Meat Item</Text>
+      </TouchableOpacity>
+
+      {/* Add Item Modal */}
+      <Modal
+        visible={showAddItemModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAddItemModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Add New Meat to Inventory</Text>
+            <Text style={localStyles.modalTitle}>Add New Inventory Item</Text>
+
             <TextInput
               style={globalStyles.input}
-              placeholder="Meat Type (e.g., Beef, Goat)"
-              value={newInventoryItem.meatType}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, meatType: text })}
+              placeholder="Meat Name (e.g., Sirloin Cut)"
+              placeholderTextColor={COLORS.textLight}
+              value={newItemName}
+              onChangeText={setNewItemName}
             />
             <TextInput
               style={globalStyles.input}
-              placeholder="Quantity (in kg)"
+              placeholder="Meat Type (e.g., Beef, Chicken, Lamb)"
+              placeholderTextColor={COLORS.textLight}
+              value={newItemType}
+              onChangeText={setNewItemType}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Quantity (kg)"
+              placeholderTextColor={COLORS.textLight}
               keyboardType="numeric"
-              value={newInventoryItem.quantity}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, quantity: text })}
+              value={newItemQuantity}
+              onChangeText={setNewItemQuantity}
             />
             <TextInput
               style={globalStyles.input}
               placeholder="Price per Kg (KES)"
+              placeholderTextColor={COLORS.textLight}
               keyboardType="numeric"
-              value={newInventoryItem.pricePerKg}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, pricePerKg: text })}
+              value={newItemPricePerKg}
+              onChangeText={setNewItemPricePerKg}
             />
-            <TextInput
-              style={globalStyles.input}
-              placeholder="Slaughterhouse Name"
-              value={newInventoryItem.slaughterhouseName}
-              editable={false} 
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, slaughterhouseName: text })}
-            />
-            <View style={localStyles.checkboxContainer}>
-              <TouchableOpacity
-                style={localStyles.checkbox}
-                onPress={() => setNewInventoryItem({ ...newInventoryItem, isPublic: !newInventoryItem.isPublic })}
-              >
-                <Ionicons
-                  name={newInventoryItem.isPublic ? 'checkbox-outline' : 'square-outline'}
-                  size={24}
-                  color={COLORS.primary}
-                />
-                <Text style={localStyles.checkboxLabel}>Make Publicly Available (for Butchers)</Text>
-              </TouchableOpacity>
-            </View>
 
             <View style={localStyles.modalButtons}>
               <TouchableOpacity
-                style={[globalStyles.buttonOutline, localStyles.modalButton]}
-                onPress={() => setShowAddInventoryModal(false)}
+                style={[globalStyles.buttonOutline, localStyles.halfWidthButton]}
+                onPress={() => setShowAddItemModal(false)}
               >
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[globalStyles.button, localStyles.modalButton]}
-                onPress={handleAddInventoryItem}
+                style={[globalStyles.button, localStyles.halfWidthButton]}
+                onPress={handleAddItem}
               >
                 <Text style={globalStyles.buttonText}>Add Item</Text>
               </TouchableOpacity>
@@ -256,28 +253,11 @@ const localStyles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 5,
-  },
-  checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
-  },
-  checkboxLabel: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: COLORS.textDark,
+  halfWidthButton: {
+    width: '48%',
   },
 });
 

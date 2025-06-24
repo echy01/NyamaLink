@@ -8,23 +8,23 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Alert,
+  Alert, 
   Image,
-  ActivityIndicator,
+  ActivityIndicator, 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; 
-import InfoCard from '../../components/InfoCard';    
-import api from '../api';                        
-import COLORS from '../styles/colors';           
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.png.jpeg';
+import chicken from '../../assets/images/chicken.jpeg'; 
 import pork from '../../assets/images/pork.jpeg';
 import lamb from '../../assets/images/lamb.png';
-import meatDefault from '../../assets/images/meat_default.jpeg';
+import meatDefault from '../../assets/images/meat_default.jpeg'; 
 
 const meatImages = {
   beef: beef,
@@ -40,18 +40,20 @@ const CustomerBrowseMeatScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Place Order Modal state
   const [showPlaceOrderModal, setShowPlaceOrderModal] = useState(false);
-  const [selectedMeatToOrder, setSelectedMeatToOrder] = useState(null);
+  const [currentMeatItem, setCurrentMeatItem] = useState(null);
   const [orderQuantity, setOrderQuantity] = useState('');
 
   const fetchAvailableMeat = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const availableMeatRes = await api.getAvailableMeatForCustomers();
-      setAvailableMeat(Array.isArray(availableMeatRes.data) ? availableMeatRes.data : []);
-    } catch (error) {
-      console.error('❌ Customer Browse Meat Load Error:', error.response?.status, error.response?.data || error.message);
+      const meatRes = await api.getAvailableMeatForCustomers();
+      // Ensure data is an array
+      setAvailableMeat(Array.isArray(meatRes.data?.availableMeat) ? meatRes.data.availableMeat : []);
+    } catch (err) {
+      console.error('❌ Customer Browse Meat Load Error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load available meat. Please try again.');
     } finally {
       setRefreshing(false);
@@ -59,39 +61,38 @@ const CustomerBrowseMeatScreen = () => {
     }
   }, []);
 
+  const handlePlaceOrder = async () => {
+    if (!currentMeatItem || !orderQuantity) {
+      Alert.alert('Error', 'Please select a meat item and enter a quantity.');
+      return;
+    }
+    const quantity = parseFloat(orderQuantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      Alert.alert('Error', 'Quantity must be a positive number.');
+      return;
+    }
+    if (quantity > currentMeatItem.quantity) {
+      Alert.alert('Error', `Requested quantity exceeds available stock (${currentMeatItem.quantity}kg).`);
+      return;
+    }
+
+    setShowPlaceOrderModal(false);
+    try {
+      await api.placeCustomerOrder(currentMeatItem._id, quantity);
+      Alert.alert('Success', `Order for ${quantity}kg of ${currentMeatItem.name} placed successfully.`);
+      // Clear form and refetch available meat
+      setOrderQuantity('');
+      fetchAvailableMeat();
+    } catch (err) {
+      console.error('❌ Place Order Error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to place order. Please try again.');
+    }
+  };
+
+
   useEffect(() => {
     fetchAvailableMeat();
   }, [fetchAvailableMeat]);
-
-  const handlePlaceOrder = async () => {
-    if (!selectedMeatToOrder || !orderQuantity || isNaN(parseFloat(orderQuantity)) || parseFloat(orderQuantity) <= 0) {
-      return Alert.alert('Validation Error', 'Please enter a valid quantity.');
-    }
-
-    if (parseFloat(orderQuantity) > selectedMeatToOrder.quantity) {
-      return Alert.alert('Order Failed', `Requested quantity (${orderQuantity}kg) exceeds available stock (${selectedMeatToOrder.quantity}kg).`);
-    }
-
-    try {
-      await api.placeCustomerOrder(selectedMeatToOrder._id, parseFloat(orderQuantity));
-      setShowPlaceOrderModal(false);
-      setSelectedMeatToOrder(null);
-      setOrderQuantity('');
-      fetchAvailableMeat(); 
-      Alert.alert('Success', 'Your order has been placed successfully!');
-    } catch (error) {
-      Alert.alert('Order Error', error.response?.data?.message || 'Failed to place order.');
-      console.error('Place order error:', error.response?.data || error.message);
-    }
-  };
-
-  const getMeatImage = (meatType) => {
-    const lowerMeatType = (meatType || '').toLowerCase();
-    if (meatImages[lowerMeatType]) {
-      return meatImages[lowerMeatType];
-    }
-    return meatImages.default;
-  };
 
   return (
     <SafeAreaView style={globalStyles.container}>
@@ -103,27 +104,34 @@ const CustomerBrowseMeatScreen = () => {
             data={availableMeat}
             renderItem={({ item }) => {
               if (!item || !item._id) {
-                console.warn("Skipping malformed available meat item:", item);
+                console.warn("Skipping malformed meat item:", item);
                 return null;
               }
+
+              const meatImageSource = meatImages[item.meatType?.toLowerCase()] || meatImages.default;
+
               return (
                 <InfoCard
-                  icon="cut-outline"
-                  title={String(item.meatType)}
-                  value={`KES ${String(item.pricePerKg)}/kg | Stock: ${String(item.quantity)}kg`}
-                  subtitle={`From: ${String(item.butcheryName || 'N/A')}`}
-                  imageSource={getMeatImage(item.meatType)}
+                  icon={
+                    <Image
+                      source={meatImageSource}
+                      style={globalStyles.infoCardImage} 
+                    />
+                  }
+                  title={String(item.name)}
+                  value={`Type: ${String(item.meatType)} | Available: ${String(item.quantity)}kg`}
+                  subtitle={`Price: KES ${String(item.pricePerKg)}/kg | From: ${String(item.butcheryName || 'N/A')}`}
                 >
                   <View style={localStyles.cardActions}>
                     <TouchableOpacity
-                      style={[globalStyles.button, localStyles.smallActionButton]}
+                      style={[globalStyles.button, globalStyles.buttonSmall]}
                       onPress={() => {
-                        setSelectedMeatToOrder(item);
+                        setCurrentMeatItem(item);
+                        setOrderQuantity(''); 
                         setShowPlaceOrderModal(true);
                       }}
                     >
-                      <Ionicons name="cart-outline" size={16} color="#fff" />
-                      <Text style={globalStyles.buttonText}>Place Order</Text>
+                      <Text style={globalStyles.buttonText}>Order Now</Text>
                     </TouchableOpacity>
                   </View>
                 </InfoCard>
@@ -131,32 +139,45 @@ const CustomerBrowseMeatScreen = () => {
             }}
             keyExtractor={(item) => String(item._id)}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAvailableMeat} />}
-            ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No meat available from butchers.</Text>}
+            ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No meat available for purchase at the moment.</Text>}
           />
         )}
       </View>
 
       {/* Place Order Modal */}
-      <Modal visible={showPlaceOrderModal} animationType="slide" transparent={true}>
+      <Modal
+        visible={showPlaceOrderModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPlaceOrderModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Place Your Order</Text>
-            {selectedMeatToOrder && (
-              <Text style={localStyles.modalSubtitle}>Ordering: {String(selectedMeatToOrder.meatType)} from {String(selectedMeatToOrder.butcheryName)}</Text>
-            )}
+            <Text style={localStyles.modalTitle}>Order {currentMeatItem?.name || 'Meat'}</Text>
+            <Text style={globalStyles.label}>Available Quantity: {currentMeatItem?.quantity} kg</Text>
+            <Text style={globalStyles.label}>Price per Kg: KES {currentMeatItem?.pricePerKg}</Text>
+
             <TextInput
               style={globalStyles.input}
-              placeholder="Quantity (Kg)"
+              placeholder="Enter Quantity (kg)"
+              placeholderTextColor={COLORS.textLight}
               keyboardType="numeric"
               value={orderQuantity}
               onChangeText={setOrderQuantity}
             />
+
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowPlaceOrderModal(false)}>
+              <TouchableOpacity
+                style={[globalStyles.buttonOutline, localStyles.halfWidthButton]}
+                onPress={() => setShowPlaceOrderModal(false)}
+              >
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handlePlaceOrder}>
-                <Text style={globalStyles.buttonText}>Confirm Order</Text>
+              <TouchableOpacity
+                style={[globalStyles.button, localStyles.halfWidthButton]}
+                onPress={handlePlaceOrder}
+              >
+                <Text style={globalStyles.buttonText}>Place Order</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -214,20 +235,13 @@ const localStyles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  modalSubtitle: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
+  halfWidthButton: {
+    width: '48%',
   },
 });
 

@@ -8,26 +8,24 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Alert,
+  Alert, 
   Image,
-  ActivityIndicator,
+  ActivityIndicator, 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; 
-import InfoCard from '../../components/InfoCard';    
-import api from '../api';                         
-import COLORS from '../styles/colors';           
-
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.png.jpeg';
+import chicken from '../../assets/images/chicken.jpeg'; 
 import pork from '../../assets/images/pork.jpeg';
 import lamb from '../../assets/images/lamb.png';
-import meatDefault from '../../assets/images/meat_default.jpeg';
+import meatDefault from '../../assets/images/meat_default.jpeg'; 
 
-// Map imported image variables to their keys for easy lookup
 const meatImages = {
   beef: beef,
   goat: goat,
@@ -42,18 +40,23 @@ const ButcherInventoryScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Inventory Management Modals
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newItem, setNewItem] = useState({ meatType: '', price: '', stock: '' });
-  const [showUpdateItemModal, setShowUpdateItemModal] = useState(false);
-  const [currentItem, setCurrentItem] = useState(null); 
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemType, setNewItemType] = useState(''); // e.g., beef, chicken, lamb
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemPricePerKg, setNewItemPricePerKg] = useState('');
 
-  const fetchAll = useCallback(async () => {
+  const [showUpdateItemModal, setShowUpdateItemModal] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [updatedQuantity, setUpdatedQuantity] = useState('');
+  const [updatedPricePerKg, setUpdatedPricePerKg] = useState('');
+
+  const fetchInventory = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const invRes = await api.getButcherInventory();
-      setInventory(Array.isArray(invRes.data?.inventory) ? invRes.data.inventory : []);
+      const inventoryRes = await api.getButcherInventory();
+      setInventory(Array.isArray(inventoryRes.data?.inventory) ? inventoryRes.data.inventory : []);
     } catch (err) {
       console.error('❌ Butcher Inventory Load Error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load inventory data. Please try again.');
@@ -61,67 +64,100 @@ const ButcherInventoryScreen = () => {
       setRefreshing(false);
       setLoading(false);
     }
-  }, []); 
-
-  useEffect(() => {
-    fetchAll(); 
-  }, [fetchAll]);  
+  }, []);
 
   const handleAddItem = async () => {
-    if (!newItem.meatType || !newItem.price || !newItem.stock) {
-      return Alert.alert('Validation Error', 'Please fill all fields to add item.');
+    if (!newItemName || !newItemType || !newItemQuantity || !newItemPricePerKg) {
+      Alert.alert('Error', 'Please fill in all fields to add a new item.');
+      return;
     }
+    const quantity = parseFloat(newItemQuantity);
+    const pricePerKg = parseFloat(newItemPricePerKg);
+
+    if (isNaN(quantity) || isNaN(pricePerKg) || quantity <= 0 || pricePerKg <= 0) {
+      Alert.alert('Error', 'Quantity and Price per Kg must be positive numbers.');
+      return;
+    }
+
+    setShowAddItemModal(false); 
     try {
-      await api.addInventoryItem({
-        meatType: newItem.meatType,
-        price: parseFloat(newItem.price),
-        stock: parseFloat(newItem.stock),
+      await api.addButcherInventory({
+        name: newItemName,
+        meatType: newItemType.toLowerCase(),
+        quantity,
+        pricePerKg,
       });
-      setNewItem({ meatType: '', price: '', stock: '' });
-      setShowAddModal(false);
-      fetchAll(); 
-      Alert.alert('Success', 'Inventory item added successfully!');
+      Alert.alert('Success', `${newItemName} added to your inventory.`);
+      setNewItemName('');
+      setNewItemType('');
+      setNewItemQuantity('');
+      setNewItemPricePerKg('');
+      fetchInventory();
     } catch (err) {
-      Alert.alert('Add Item Error', err.response?.data?.message || err.message || 'Could not add item.');
-      console.error('Add item error:', err.response?.data || err.message);
+      console.error('❌ Add Item Error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to add item. Please try again.');
     }
   };
 
   const handleUpdateItem = async () => {
-    if (!currentItem || !currentItem._id || !currentItem.meatType || !currentItem.price || !currentItem.stock) {
-      return Alert.alert('Validation Error', 'Invalid item data for update.');
+    if (!currentItem || (!updatedQuantity && !updatedPricePerKg)) {
+      Alert.alert('Error', 'No changes detected or item not selected.');
+      return;
     }
+
+    const quantity = updatedQuantity ? parseFloat(updatedQuantity) : currentItem.quantity;
+    const pricePerKg = updatedPricePerKg ? parseFloat(updatedPricePerKg) : currentItem.pricePerKg;
+
+    if (isNaN(quantity) || isNaN(pricePerKg) || quantity < 0 || pricePerKg < 0) {
+      Alert.alert('Error', 'Quantity and Price per Kg must be non-negative numbers.');
+      return;
+    }
+
+    setShowUpdateItemModal(false); 
     try {
-      await api.updateInventoryItem(currentItem._id, {
-        meatType: currentItem.meatType,
-        price: parseFloat(currentItem.price),
-        stock: parseFloat(currentItem.stock),
-      });
-      setShowUpdateItemModal(false);
-      setCurrentItem(null);
-      fetchAll(); 
-      Alert.alert('Success', 'Inventory item updated successfully!');
+      await api.updateButcherInventory(currentItem._id, { quantity, pricePerKg });
+      Alert.alert('Success', `${currentItem.name} updated.`);
+      fetchInventory(); // Refresh list
     } catch (err) {
-      Alert.alert('Update Item Error', err.response?.data?.message || err.message || 'Could not update item.');
-      console.error('Update item error:', err.response?.data || err.message);
+      console.error('❌ Update Item Error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.message || 'Failed to update item. Please try again.');
     }
   };
 
-  const getMeatImage = (meatType) => {
-    const lowerMeatType = (meatType || '').toLowerCase();
-    if (meatImages[lowerMeatType]) {
-      return meatImages[lowerMeatType];
-    }
-    return meatImages.default;
+  const handleDeleteItem = async (itemId) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this item from your inventory?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await api.deleteButcherInventory(itemId);
+              Alert.alert("Success", "Item deleted successfully.");
+              fetchInventory();
+            } catch (err) {
+              console.error('❌ Delete Item Error:', err.response?.data || err.message);
+              Alert.alert('Error', err.response?.data?.message || 'Failed to delete item. Please try again.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
+
+  useEffect(() => {
+    fetchInventory();
+  }, [fetchInventory]);
 
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={localStyles.contentContainer}>
-        <TouchableOpacity style={globalStyles.button} onPress={() => setShowAddModal(true)}>
-          <Ionicons name="add-circle-outline" size={20} color="#fff" />
-          <Text style={globalStyles.buttonText}>Add New Item</Text>
-        </TouchableOpacity>
         {loading && !refreshing ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (
@@ -129,73 +165,116 @@ const ButcherInventoryScreen = () => {
             data={inventory}
             renderItem={({ item }) => {
               if (!item || !item._id) {
-                console.warn("Skipping malformed inventory item:", item);
+                console.warn("Skipping malformed item in Butcher Inventory tab:", item);
                 return null;
               }
+
+              const meatImageSource = meatImages[item.meatType?.toLowerCase()] || meatImages.default;
+
               return (
                 <InfoCard
-                  title={String(item.meatType)}
-                  value={`Stock: ${String(item.quantity)}kg @ KES ${String(item.pricePerKg)}/kg`}
-                  subtitle={`Butchery: ${String(item.slaughterhouseName)}`} 
-                  imageSource={getMeatImage(item.meatType)}
+                  icon={
+                    <Image
+                      source={meatImageSource}
+                      style={globalStyles.infoCardImage} 
+                    />
+                  }
+                  title={String(item.name)}
+                  value={`Type: ${String(item.meatType)} | Quantity: ${String(item.quantity)}kg`}
+                  subtitle={`Price: KES ${String(item.pricePerKg)}/kg | Added: ${new Date(item.createdAt).toLocaleDateString()}`}
                 >
                   <View style={localStyles.cardActions}>
                     <TouchableOpacity
-                      style={[globalStyles.buttonOutline, localStyles.smallActionButton]}
+                      style={[globalStyles.button, globalStyles.buttonSmall, { backgroundColor: COLORS.info }]}
                       onPress={() => {
-                        setCurrentItem({
-                            _id: item._id,
-                            meatType: String(item.meatType),
-                            price: String(item.pricePerKg),
-                            stock: String(item.quantity) 
-                        });
+                        setCurrentItem(item);
+                        setUpdatedQuantity(String(item.quantity));
+                        setUpdatedPricePerKg(String(item.pricePerKg));
                         setShowUpdateItemModal(true);
                       }}
                     >
-                      <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-                      <Text style={globalStyles.buttonOutlineText}>Edit</Text>
+                      <Text style={globalStyles.buttonText}>Update</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[globalStyles.buttonDanger, globalStyles.buttonSmall, { marginLeft: 10 }]}
+                      onPress={() => handleDeleteItem(item._id)}
+                    >
+                      <Text style={globalStyles.buttonText}>Delete</Text>
                     </TouchableOpacity>
                   </View>
                 </InfoCard>
               );
             }}
-            keyExtractor={(item) => item._id ? String(item._id) : Math.random().toString()}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAll} />}
+            keyExtractor={(item) => String(item._id)}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchInventory} />}
             ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No inventory items found.</Text>}
           />
         )}
       </View>
 
+      {/* Button to add new item */}
+      <TouchableOpacity
+        style={[globalStyles.button, { margin: 16, marginBottom: 24 }]}
+        onPress={() => setShowAddItemModal(true)}
+      >
+        <Ionicons name="add-circle-outline" size={24} color={COLORS.white} style={{ marginRight: 8 }} />
+        <Text style={globalStyles.buttonText}>Add New Meat Item</Text>
+      </TouchableOpacity>
+
+
       {/* Add Item Modal */}
-      <Modal visible={showAddModal} animationType="slide" transparent={true}>
+      <Modal
+        visible={showAddItemModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowAddItemModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
             <Text style={localStyles.modalTitle}>Add New Inventory Item</Text>
+
             <TextInput
               style={globalStyles.input}
-              placeholder="Meat Type (e.g., Beef, Goat, Chicken, Pork, Lamb)"
-              value={newItem.meatType}
-              onChangeText={(text) => setNewItem({ ...newItem, meatType: text })}
+              placeholder="Meat Name (e.g., Beef Ribeye)"
+              placeholderTextColor={COLORS.textLight}
+              value={newItemName}
+              onChangeText={setNewItemName}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Meat Type (e.g., Beef, Chicken, Lamb)"
+              placeholderTextColor={COLORS.textLight}
+              value={newItemType}
+              onChangeText={setNewItemType}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Quantity (kg)"
+              placeholderTextColor={COLORS.textLight}
+              keyboardType="numeric"
+              value={newItemQuantity}
+              onChangeText={setNewItemQuantity}
             />
             <TextInput
               style={globalStyles.input}
               placeholder="Price per Kg (KES)"
+              placeholderTextColor={COLORS.textLight}
               keyboardType="numeric"
-              value={String(newItem.price)}
-              onChangeText={(text) => setNewItem({ ...newItem, price: text })}
+              value={newItemPricePerKg}
+              onChangeText={setNewItemPricePerKg}
             />
-            <TextInput
-              style={globalStyles.input}
-              placeholder="Stock (Kg)"
-              keyboardType="numeric"
-              value={String(newItem.stock)}
-              onChangeText={(text) => setNewItem({ ...newItem, stock: text })}
-            />
+
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowAddModal(false)}>
+              <TouchableOpacity
+                style={[globalStyles.buttonOutline, localStyles.halfWidthButton]}
+                onPress={() => setShowAddItemModal(false)}
+              >
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handleAddItem}>
+              <TouchableOpacity
+                style={[globalStyles.button, localStyles.halfWidthButton]}
+                onPress={handleAddItem}
+              >
                 <Text style={globalStyles.buttonText}>Add Item</Text>
               </TouchableOpacity>
             </View>
@@ -204,39 +283,44 @@ const ButcherInventoryScreen = () => {
       </Modal>
 
       {/* Update Item Modal */}
-      <Modal visible={showUpdateItemModal} animationType="slide" transparent={true}>
+      <Modal
+        visible={showUpdateItemModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowUpdateItemModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Update Inventory Item</Text>
-            {currentItem && (
-              <>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Meat Type"
-                  value={String(currentItem.meatType)}
-                  onChangeText={(text) => setCurrentItem({ ...currentItem, meatType: text })}
-                />
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Price per Kg"
-                  keyboardType="numeric"
-                  value={String(currentItem.price)}
-                  onChangeText={(text) => setCurrentItem({ ...currentItem, price: text })}
-                />
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Stock (Kg)"
-                  keyboardType="numeric"
-                  value={String(currentItem.stock)}
-                  onChangeText={(text) => setCurrentItem({ ...currentItem, stock: text })}
-                />
-              </>
-            )}
+            <Text style={localStyles.modalTitle}>Update {currentItem?.name || 'Item'}</Text>
+
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Quantity (kg)"
+              placeholderTextColor={COLORS.textLight}
+              keyboardType="numeric"
+              value={updatedQuantity}
+              onChangeText={setUpdatedQuantity}
+            />
+            <TextInput
+              style={globalStyles.input}
+              placeholder="Price per Kg (KES)"
+              placeholderTextColor={COLORS.textLight}
+              keyboardType="numeric"
+              value={updatedPricePerKg}
+              onChangeText={setUpdatedPricePerKg}
+            />
+
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowUpdateItemModal(false)}>
+              <TouchableOpacity
+                style={[globalStyles.buttonOutline, localStyles.halfWidthButton]}
+                onPress={() => setShowUpdateItemModal(false)}
+              >
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handleUpdateItem}>
+              <TouchableOpacity
+                style={[globalStyles.button, localStyles.halfWidthButton]}
+                onPress={handleUpdateItem}
+              >
                 <Text style={globalStyles.buttonText}>Update Item</Text>
               </TouchableOpacity>
             </View>
@@ -294,20 +378,13 @@ const localStyles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  modalSubtitle: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
+  halfWidthButton: {
+    width: '48%',
   },
 });
 
