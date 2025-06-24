@@ -1,30 +1,30 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Alert,
+  Dimensions,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Dimensions,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const COLORS = {
-  primary: '#FF746C',
-  secondary: '#FF5A52',
-  accent: '#E63946',
-  buttonStart: '#DC2626',
-  buttonMid: '#B91C1C',
-  buttonEnd: '#991B1B',
-  white: '#FFFFFF',
-  textLight: 'rgba(255, 255, 255, 0.95)',
-  shadow: '#000000'
+  primary: "#FF746C",
+  secondary: "#FF5A52",
+  accent: "#E63946",
+  buttonStart: "#DC2626",
+  buttonMid: "#B91C1C",
+  buttonEnd: "#991B1B",
+  white: "#FFFFFF",
+  textLight: "rgba(255, 255, 255, 0.95)",
+  shadow: "#000000",
 };
 
 export default function LoginScreen() {
@@ -38,14 +38,11 @@ export default function LoginScreen() {
     }
 
     try {
-      const response = await fetch(
-        "http://192.168.100.48:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const response = await fetch("http://10.71.135.198:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await response.json();
 
@@ -58,10 +55,12 @@ export default function LoginScreen() {
           data.user.name
         )}`
       );
-
     } catch (err) {
       console.error("Login API error:", err);
-      Alert.alert("Login Error", err.message || "Unable to connect to server. Please try again later.");
+      Alert.alert(
+        "Login Error",
+        err.message || "Unable to connect to server. Please try again later."
+      );
     }
   };
 
@@ -117,7 +116,8 @@ export default function LoginScreen() {
 
           <TouchableOpacity onPress={() => router.push("/signupscreen")}>
             <Text style={styles.signupLink}>
-              Don't have an account? <Text style={styles.signupLinkBold}>Sign up</Text>
+              Don't have an account?{" "}
+              <Text style={styles.signupLinkBold}>Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -132,26 +132,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingBottom: 60,
   },
   header: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: 24,
     top: 0,
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     color: COLORS.white,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -159,9 +159,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
@@ -180,23 +180,23 @@ const styles = StyleSheet.create({
   buttonGradient: {
     paddingVertical: 16,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loginButtonText: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   signupLink: {
     color: COLORS.textLight,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
     fontSize: 15,
   },
   signupLinkBold: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.white,
   },
 });

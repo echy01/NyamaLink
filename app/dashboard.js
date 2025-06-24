@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import CustomerDashboard from './dashboard/customer';
-import ButcherDashboard from './dashboard/butcher';
-import AgentDashboard from './dashboard/agent';
+// import CustomerDashboard from './customer';
+// import AgentDashboard from './agent';
+import COLORS from './styles/colors';
 
 export default function DashboardRouter() {
   const [loading, setLoading] = useState(true);
@@ -22,15 +22,13 @@ export default function DashboardRouter() {
           return;
         }
 
-        // Get role from params or decode from token
         const role = params.role;
         const name = decodeURIComponent(params.name || '');
-        
+
         if (role) {
           setUserRole(role);
           setUserName(name);
         } else {
-          // If no role in params, redirect to login
           router.replace('/loginscreen');
           return;
         }
@@ -45,30 +43,38 @@ export default function DashboardRouter() {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (!loading && userRole) {
+      switch (userRole) {
+        case 'customer':
+          router.replace(`/(customer)?name=${encodeURIComponent(userName)}`);
+          return; 
+        case 'butcher':
+          router.replace(`/(butcher)?name=${encodeURIComponent(userName)}`);
+          return;
+        case 'agent':
+          router.replace(`/(agent)?name=${encodeURIComponent(userName)}`);
+          return;
+        default:
+          break;
+      }
+    }
+  }, [loading, userRole, userName]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#cc0000" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Loading Dashboard...</Text>
       </View>
     );
   }
 
-  // Render appropriate dashboard based on role
-  switch (userRole) {
-    case 'customer':
-      return <CustomerDashboard userName={userName} />;
-    case 'butcher':
-      return <ButcherDashboard userName={userName} />;
-    case 'agent':
-      return <AgentDashboard userName={userName} />;
-    default:
-      return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Invalid user role</Text>
-        </View>
-      );
-  }
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorText}>Invalid user role or unhandled state.</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -76,22 +82,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.bg,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: COLORS.textLight,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.bg,
   },
   errorText: {
     fontSize: 18,
-    color: '#cc0000',
+    color: COLORS.accent,
     fontWeight: 'bold',
   },
 });

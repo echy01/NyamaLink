@@ -1,32 +1,32 @@
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Dimensions,
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const roles = ["customer", "butcher", "agent"];
 
 const COLORS = {
-  primary: '#FF746C',
-  secondary: '#FF5A52',
-  accent: '#E63946',
-  buttonStart: '#DC2626',
-  buttonMid: '#B91C1C',
-  buttonEnd: '#991B1B',
-  white: '#FFFFFF',
-  textLight: 'rgba(255, 255, 255, 0.95)',
-  shadow: '#000000'
+  primary: "#FF746C",
+  secondary: "#FF5A52",
+  accent: "#E63946",
+  buttonStart: "#DC2626",
+  buttonMid: "#B91C1C",
+  buttonEnd: "#991B1B",
+  white: "#FFFFFF",
+  textLight: "rgba(255, 255, 255, 0.95)",
+  shadow: "#000000",
 };
 
 export default function SignUpScreen() {
@@ -53,7 +53,7 @@ export default function SignUpScreen() {
 
     try {
       const response = await fetch(
-        "http://192.168.100.48:5000/api/auth/register",
+        "http://10.71.135.198:5000/api/auth/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -145,7 +145,9 @@ export default function SignUpScreen() {
                 style={[styles.roleButton, role === r && styles.selectedRole]}
                 onPress={() => setRole(r)}
               >
-                <Text style={role === r ? styles.selectedRoleText : styles.roleText}>
+                <Text
+                  style={role === r ? styles.selectedRoleText : styles.roleText}
+                >
                   {r.charAt(0).toUpperCase() + r.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -165,7 +167,8 @@ export default function SignUpScreen() {
 
           <TouchableOpacity onPress={() => router.push("/loginscreen")}>
             <Text style={styles.loginLink}>
-              Already have an account? <Text style={styles.loginLinkBold}>Login</Text>
+              Already have an account?{" "}
+              <Text style={styles.loginLinkBold}>Login</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -185,19 +188,19 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 60,
     marginBottom: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     left: 24,
     top: 0,
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     color: COLORS.white,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -205,9 +208,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
@@ -218,35 +221,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
     color: COLORS.textLight,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   roles: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 30,
   },
   roleButton: {
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: "rgba(255, 255, 255, 0.5)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
     flex: 1,
     marginHorizontal: 5,
-    alignItems: 'center',
+    alignItems: "center",
   },
   selectedRole: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     borderColor: COLORS.white,
   },
   roleText: {
     color: COLORS.textLight,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   selectedRoleText: {
     color: COLORS.white,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   signupButton: {
     marginTop: 10,
@@ -260,23 +263,23 @@ const styles = StyleSheet.create({
   buttonGradient: {
     paddingVertical: 16,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   signupButtonText: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   loginLink: {
     color: COLORS.textLight,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
     fontSize: 15,
   },
   loginLinkBold: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.white,
   },
 });
