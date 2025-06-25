@@ -1,65 +1,66 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import COLORS from '../styles/colors'; 
-import { Text } from 'react-native'; 
+import COLORS from '../styles/colors';
+import { Text } from 'react-native';
 
 const CustomerLayout = () => {
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: true, 
+        headerShown: true,
         headerStyle: {
           backgroundColor: COLORS.card,
           borderBottomWidth: 1,
           borderBottomColor: COLORS.border,
         },
         headerTitleStyle: {
-          color: COLORS.textDark, 
+          color: COLORS.textDark,
           fontWeight: '600',
         },
-        tabBarActiveTintColor: COLORS.primary, 
-        tabBarInactiveTintColor: COLORS.textLight, 
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textLight,
         tabBarStyle: {
           backgroundColor: COLORS.card,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          height: 60, 
-          paddingBottom: 5, 
+          height: 60,
+          paddingBottom: 5,
         },
         tabBarLabelStyle: {
-          fontSize: 12, 
+          fontSize: 12,
           fontWeight: '600',
         },
         tabBarIcon: ({ color, size }) => {
           let iconName;
-          if (route.name === 'index') { 
-            iconName = 'basket-outline'; 
+          if (route.name === 'index') {
+            iconName = 'basket-outline';
           } else if (route.name === 'my-orders') {
-            iconName = 'list-outline'; 
+            iconName = 'list-outline';
           } else if (route.name === 'profile') {
             iconName = 'person-outline';
           }
-          return <Ionicons name={iconName} size={size} color={color} />;
+          // Ensure a default icon name is provided if none of the above match
+          return <Ionicons name={iconName || 'alert-circle-outline'} size={size} color={color} />;
         },
       })}
     >
       <Tabs.Screen
-        name="index" 
+        name="index"
         options={{
           title: 'Browse Meat',
-          headerTitle: 'Available Meat', 
+          headerTitle: 'Available Meat',
         }}
       />
       <Tabs.Screen
-        name="my-orders" 
+        name="my-orders"
         options={{
           title: 'My Orders',
           headerTitle: 'Your Order History',
         }}
       />
       <Tabs.Screen
-        name="profile" 
+        name="profile"
         options={{
           title: 'Profile',
           headerTitle: 'My Profile',

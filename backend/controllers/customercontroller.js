@@ -1,38 +1,41 @@
 import asyncHandler from 'express-async-handler';
 import Inventory from '../models/inventory.js';
 import Order from '../models/order.js';
-import User from '../models/User.js'; 
+import User from '../models/User.js';
 
-
-export const getAvailableMeat = asyncHandler(async (req, res) => {
+// 🥩 Get available meat from public butcher inventory
+const getAvailableMeat = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id || req.user.role !== 'customer') {
     res.status(401);
     throw new Error('Not authorized, customer user ID not found or not a customer');
   }
 
-  const availableMeat = await Inventory.find({ ownerType: 'butcher' })
-    .populate({
-      path: 'ownerId', 
-      model: 'User',
-      select: 'name' 
-    })
-    .sort({ createdAt: -1 }); 
+  const availableMeat = await Inventory.find({
+    ownerType: 'butcher',
+    quantity: { $gt: 0 },
+    isPublic: true,
+  }).populate({
+    path: 'ownerId',
+    model: 'User',
+    select: 'name'
+  }).sort({ createdAt: -1 });
 
   const formattedMeat = availableMeat.map(item => ({
     _id: item._id,
+    name: `${item.meatType} - ${item.slaughterhouseName}`,
     meatType: item.meatType,
     quantity: item.quantity,
     pricePerKg: item.pricePerKg,
-    butcheryName: item.ownerId ? item.ownerId.name : 'Unknown Butchery', 
-    slaughterhouseName: item.slaughterhouseName, 
+    butcheryName: item.ownerId ? item.ownerId.name : 'Unknown Butchery',
+    slaughterhouseName: item.slaughterhouseName,
     createdAt: item.createdAt,
-    // Add any other fields useful for the customer view
   }));
 
-  res.json(formattedMeat);
+  res.json({ availableMeat: formattedMeat });
 });
 
-export const placeOrder = asyncHandler(async (req, res) => {
+// 🛒 Place a customer order
+const placeOrder = asyncHandler(async (req, res) => {
   const { meatId, quantity } = req.body;
 
   if (!meatId || !quantity || quantity <= 0) {
@@ -47,7 +50,8 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
   const meatToOrder = await Inventory.findOne({
     _id: meatId,
-    ownerType: 'butcher' 
+    ownerType: 'butcher',
+    isPublic: true,
   });
 
   if (!meatToOrder) {
@@ -57,21 +61,21 @@ export const placeOrder = asyncHandler(async (req, res) => {
 
   if (meatToOrder.quantity < quantity) {
     res.status(400);
-    throw new Error(`Requested quantity (${quantity}kg) exceeds available stock (${meatToOrder.quantity}kg) from ${meatToOrder.slaughterhouseName}.`);
+    throw new Error(`Requested quantity (${quantity}kg) exceeds available stock (${meatToOrder.quantity}kg).`);
   }
 
   const totalPrice = meatToOrder.pricePerKg * quantity;
 
   const newOrder = new Order({
     customerId: req.user._id,
-    butcherId: meatToOrder.ownerId, 
-    butcheryName: meatToOrder.slaughterhouseName, 
+    butcherId: meatToOrder.ownerId,
+    butcheryName: meatToOrder.slaughterhouseName,
     meatId: meatToOrder._id,
     meatType: meatToOrder.meatType,
     pricePerKgAtOrder: meatToOrder.pricePerKg,
     quantity: parseFloat(quantity),
-    totalPrice: totalPrice,
-    status: 'pending', 
+    totalPrice,
+    status: 'pending',
   });
 
   await newOrder.save();
@@ -86,7 +90,8 @@ export const placeOrder = asyncHandler(async (req, res) => {
   });
 });
 
-export const getMyOrders = asyncHandler(async (req, res) => {
+// 📜 Get customer's own orders
+const getMyOrders = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id || req.user.role !== 'customer') {
     res.status(401);
     throw new Error('Not authorized, customer user ID not found or not a customer');
@@ -94,21 +99,21 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 
   const orders = await Order.find({ customerId: req.user._id })
     .populate({
-      path: 'butcherId', 
+      path: 'butcherId',
       model: 'User',
       select: 'name email'
     })
     .populate({
-      path: 'meatId', 
+      path: 'meatId',
       model: 'Inventory',
-      select: 'meatType' 
+      select: 'meatType'
     })
     .sort({ createdAt: -1 });
 
   const formattedOrders = orders.map(order => ({
     _id: order._id,
-    butcheryName: order.butcheryName, 
-    butcherContact: order.butcherId?.email || 'N/A', 
+    butcheryName: order.butcheryName,
+    butcherContact: order.butcherId?.email || 'N/A',
     meatType: order.meatType,
     quantity: order.quantity,
     totalPrice: order.totalPrice,
@@ -118,3 +123,10 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 
   res.json(formattedOrders);
 });
+
+// ✅ Export all together at the bottom
+export {
+  getAvailableMeat,
+  placeOrder,
+  getMyOrders,
+};

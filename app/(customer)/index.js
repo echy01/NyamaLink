@@ -8,12 +8,11 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  Alert, 
+  Alert,
   Image,
-  ActivityIndicator, 
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import globalStyles from '../styles/globalStyles';
 import InfoCard from '../../components/InfoCard';
 import api from '../api';
@@ -21,17 +20,17 @@ import COLORS from '../styles/colors';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.jpeg'; 
+import chicken from '../../assets/images/chicken.jpeg';
 import pork from '../../assets/images/pork.jpeg';
 import lamb from '../../assets/images/lamb.png';
-import meatDefault from '../../assets/images/meat_default.jpeg'; 
+import meatDefault from '../../assets/images/meat_default.jpeg';
 
 const meatImages = {
-  beef: beef,
-  goat: goat,
-  chicken: chicken,
-  pork: pork,
-  lamb: lamb,
+  beef,
+  goat,
+  chicken,
+  pork,
+  lamb,
   default: meatDefault,
 };
 
@@ -40,7 +39,6 @@ const CustomerBrowseMeatScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Place Order Modal state
   const [showPlaceOrderModal, setShowPlaceOrderModal] = useState(false);
   const [currentMeatItem, setCurrentMeatItem] = useState(null);
   const [orderQuantity, setOrderQuantity] = useState('');
@@ -50,7 +48,6 @@ const CustomerBrowseMeatScreen = () => {
     setLoading(true);
     try {
       const meatRes = await api.getAvailableMeatForCustomers();
-      // Ensure data is an array
       setAvailableMeat(Array.isArray(meatRes.data?.availableMeat) ? meatRes.data.availableMeat : []);
     } catch (err) {
       console.error('❌ Customer Browse Meat Load Error:', err.response?.data || err.message);
@@ -79,8 +76,7 @@ const CustomerBrowseMeatScreen = () => {
     setShowPlaceOrderModal(false);
     try {
       await api.placeCustomerOrder(currentMeatItem._id, quantity);
-      Alert.alert('Success', `Order for ${quantity}kg of ${currentMeatItem.name} placed successfully.`);
-      // Clear form and refetch available meat
+      Alert.alert('Success', `Order for ${quantity}kg of ${currentMeatItem.meatType} placed successfully.`);
       setOrderQuantity('');
       fetchAvailableMeat();
     } catch (err) {
@@ -88,7 +84,6 @@ const CustomerBrowseMeatScreen = () => {
       Alert.alert('Error', err.response?.data?.message || 'Failed to place order. Please try again.');
     }
   };
-
 
   useEffect(() => {
     fetchAvailableMeat();
@@ -112,14 +107,9 @@ const CustomerBrowseMeatScreen = () => {
 
               return (
                 <InfoCard
-                  icon={
-                    <Image
-                      source={meatImageSource}
-                      style={globalStyles.infoCardImage} 
-                    />
-                  }
-                  title={String(item.name)}
-                  value={`Type: ${String(item.meatType)} | Available: ${String(item.quantity)}kg`}
+                  imageSource={meatImageSource}
+                  title={String(item.meatType)}
+                  value={`Available: ${String(item.quantity)}kg`}
                   subtitle={`Price: KES ${String(item.pricePerKg)}/kg | From: ${String(item.butcheryName || 'N/A')}`}
                 >
                   <View style={localStyles.cardActions}>
@@ -127,7 +117,7 @@ const CustomerBrowseMeatScreen = () => {
                       style={[globalStyles.button, globalStyles.buttonSmall]}
                       onPress={() => {
                         setCurrentMeatItem(item);
-                        setOrderQuantity(''); 
+                        setOrderQuantity('');
                         setShowPlaceOrderModal(true);
                       }}
                     >
@@ -153,7 +143,7 @@ const CustomerBrowseMeatScreen = () => {
       >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Order {currentMeatItem?.name || 'Meat'}</Text>
+            <Text style={localStyles.modalTitle}>Order {currentMeatItem?.meatType || 'Meat'}</Text>
             <Text style={globalStyles.label}>Available Quantity: {currentMeatItem?.quantity} kg</Text>
             <Text style={globalStyles.label}>Price per Kg: KES {currentMeatItem?.pricePerKg}</Text>
 
@@ -183,7 +173,6 @@ const CustomerBrowseMeatScreen = () => {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 };

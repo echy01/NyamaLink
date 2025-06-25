@@ -41,7 +41,7 @@ const ButcherPurchaseScreen = () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const purchaseOrdersRes = await api.getPurchaseOrdersForButcher();
+      const purchaseOrdersRes = await api.getMySlaughterhouseOrders();
       setPurchaseOrders(Array.isArray(purchaseOrdersRes.data?.orders) ? purchaseOrdersRes.data.orders : []);
     } catch (err) {
       console.error('❌ Butcher Purchase Orders Load Error:', err.response?.data || err.message);

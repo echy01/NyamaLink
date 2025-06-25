@@ -1,10 +1,11 @@
+// app/loginscreen.js
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert, 
+  Alert, // Keeping Alert for quick feedback as it's a login screen
   Dimensions,
   StyleSheet,
   Text,
@@ -14,9 +15,8 @@ import {
   ActivityIndicator, 
 } from "react-native";
 
-import globalStyles from './styles/globalStyles';
-import COLORS from './styles/colors';
-import api from './api'; 
+import COLORS from './styles/colors'; 
+import api from './api';
 
 const { width } = Dimensions.get("window");
 
@@ -24,7 +24,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false); // State for loading indicator
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -32,27 +32,33 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true); 
+    setLoading(true); // Show loading indicator
     try {
+      // Use the API utility for login
       const response = await api.login({ email, password });
       
-      const { token, role, name } = response.data; 
-      await AsyncStorage.setItem("token", token);
+      const { token, user } = response.data; // Assuming API returns token and user object with role and name
 
-      router.replace(`/(dashboard)/?role=${role}&name=${encodeURIComponent(name)}`);
+      await AsyncStorage.setItem("token", token);
+      
+      // Navigate to dashboard, passing role and name as parameters
+      router.replace({
+        pathname: "/dashboard",
+        params: { role: user.role, name: user.name },
+      });
 
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials. Please try again.");
     } finally {
-      setLoading(false);
+      setLoading(false); // Hide loading indicator
     }
   };
 
   return (
     <View style={localStyles.safeArea}>
       <LinearGradient
-        colors={[COLORS.primary, COLORS.danger, '#8B0000']} 
+        colors={[COLORS.primary, COLORS.danger, '#8B0000']} // Deeper red gradient for login
         style={localStyles.gradientContainer}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -85,9 +91,9 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity 
-              style={[localStyles.loginButton, loading && {opacity: 0.7}]}
+              style={[localStyles.loginButton, loading && {opacity: 0.7}]} // Dim button when loading
               onPress={handleLogin}
-              disabled={loading} 
+              disabled={loading} // Disable button while loading
             >
               {loading ? (
                 <ActivityIndicator color={COLORS.white} />
@@ -115,7 +121,7 @@ const localStyles = StyleSheet.create({
   },
   gradientContainer: {
     flex: 1,
-    paddingTop: 80, 
+    paddingTop: 80, // Adjust for status bar and header space
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -128,7 +134,7 @@ const localStyles = StyleSheet.create({
   backButton: {
     position: "absolute",
     left: 20,
-    top: 50, 
+    top: 50, // Adjust based on desired position
     zIndex: 1,
   },
   title: {
@@ -137,24 +143,24 @@ const localStyles = StyleSheet.create({
     color: COLORS.white,
     textAlign: "center",
     marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)', 
+    textShadowColor: 'rgba(0, 0, 0, 0.2)', // Subtle text shadow
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   subtitle: {
     fontSize: 18,
-    color: COLORS.secondary, 
+    color: COLORS.secondary, // Uses a lighter shade from the new palette
     textAlign: "center",
     marginBottom: 40,
     fontWeight: '500',
   },
   formContainer: {
     width: '100%',
-    maxWidth: 400, 
-    alignSelf: 'center', 
+    maxWidth: 400, // Max width for larger screens
+    alignSelf: 'center', // Center the form
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slightly transparent white
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
@@ -165,7 +171,7 @@ const localStyles = StyleSheet.create({
     fontWeight: '500',
   },
   loginButton: {
-    backgroundColor: COLORS.accent, 
+    backgroundColor: COLORS.accent, // A distinct accent color for the button
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -183,13 +189,13 @@ const localStyles = StyleSheet.create({
     fontWeight: "700",
   },
   signupText: {
-    color: COLORS.textLight, 
+    color: COLORS.textLight, // Light text for general info
     textAlign: "center",
     marginTop: 20,
     fontSize: 15,
   },
   signupLink: {
-    color: COLORS.secondary,  
+    color: COLORS.secondary, // Matches subtitle for consistent linking
     fontWeight: "bold",
   },
 });

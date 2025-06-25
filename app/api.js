@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.100.48:5000/api";
+const API_BASE_URL = "http://192.168.100.46:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -31,7 +31,6 @@ const api = {
   getAvailableMeatForPurchase: () => instance.get("/agent/purchase/available"),
   placeMeatOrderToSlaughterhouse: (meatId, quantity) =>
     instance.post("/agent/purchase/order", { meatId, quantity }),
-  // New Agent actions for Purchases (butcher orders to agent's slaughterhouse)
   updateButcherOrderStatus: (
     purchaseId,
     status,
@@ -64,10 +63,13 @@ const api = {
       dispatchDetails,
       deliveryConfirmation,
     }),
-  getSlaughterhouseOrders: () => instance.get("/butcher/slaughterhouse-orders"),
+
+  // ✅ Renamed from getSlaughterhouseOrders to clearer getMySlaughterhouseOrders
+  getMySlaughterhouseOrders: () =>
+    instance.get("/butcher/slaughterhouse-orders"),
+
   orderFromSlaughterhouse: (meatId, quantity) =>
     instance.post("/butcher/order-from-slaughterhouse", { meatId, quantity }),
-  // New Butcher actions for Slaughterhouse orders (butcher's own purchases)
   updateSlaughterhouseOrderStatus: (
     purchaseId,
     status,
@@ -85,14 +87,13 @@ const api = {
   placeCustomerOrder: (meatId, quantity) =>
     instance.post("/customer/place-order", { meatId, quantity }),
   getMyCustomerOrders: () => instance.get("/customer/my-orders"),
-  // New Customer actions for their own orders
   updateMyCustomerOrderStatus: (orderId, status, deliveryConfirmation = {}) =>
     instance.put(`/customer/my-orders/${orderId}/status`, {
       status,
       deliveryConfirmation,
     }),
 
-  //  Payment Endpoints (Placeholders for Paystack integration)
+  //  Payment Endpoints
   initializePayment: (orderId, amount, email) =>
     instance.post(`/payment/initialize`, { orderId, amount, email }),
   verifyPayment: (transactionRef) =>

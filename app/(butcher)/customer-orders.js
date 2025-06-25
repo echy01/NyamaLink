@@ -131,21 +131,21 @@ const ButcherCustomerOrdersScreen = () => {
                     <Text>
                       <Text style={{fontWeight: 'bold'}}>Status:</Text> {String(item.status || 'N/A')}
                       {item.dispatchDetails && item.dispatchDetails.trackingNumber && (
-                        `\nTracking: ${String(item.dispatchDetails.trackingNumber)}`
+                        <Text>{`\nTracking: ${String(item.dispatchDetails.trackingNumber)}`}</Text>
                       )}
                       {item.dispatchDetails && item.dispatchDetails.carrier && (
-                        `\nCarrier: ${String(item.dispatchDetails.carrier)}`
+                        <Text>{`\nCarrier: ${String(item.dispatchDetails.carrier)}`}</Text>
                       )}
                       {item.dispatchDetails && item.dispatchDetails.estimatedDeliveryDate && (
-                        `\nEst. Delivery: ${new Date(item.dispatchDetails.estimatedDeliveryDate).toLocaleDateString()}`
+                        <Text>{`\nEst. Delivery: ${new Date(item.dispatchDetails.estimatedDeliveryDate).toLocaleDateString()}`}</Text>
                       )}
                       {item.deliveryConfirmation && item.deliveryConfirmation.receivedBy && (
-                        `\nReceived By: ${String(item.deliveryConfirmation.receivedBy)}`
+                        <Text>{`\nReceived By: ${String(item.deliveryConfirmation.receivedBy)}`}</Text>
                       )}
                       {item.deliveryConfirmation && item.deliveryConfirmation.receivedDate && (
-                        ` on ${new Date(item.deliveryConfirmation.receivedDate).toLocaleDateString()}`
+                        <Text>{` on ${new Date(item.deliveryConfirmation.receivedDate).toLocaleDateString()}`}</Text>
                       )}
-                      {`\nTotal: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}
+                      <Text>{`\nTotal: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}</Text>
                     </Text>
                   }
                 >
@@ -192,6 +192,7 @@ const ButcherCustomerOrdersScreen = () => {
             <TextInput
               style={globalStyles.input}
               placeholder="New Status (e.g., accepted, processing, dispatched, completed)"
+              placeholderTextColor={COLORS.textLight}
               value={newOrderStatus}
               onChangeText={setNewOrderStatus}
             />
@@ -203,18 +204,21 @@ const ButcherCustomerOrdersScreen = () => {
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Tracking Number (Optional)"
+                  placeholderTextColor={COLORS.textLight}
                   value={customerOrderTrackingNumber}
                   onChangeText={setCustomerOrderTrackingNumber}
                 />
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Carrier (e.g., In-house, G4S)"
+                  placeholderTextColor={COLORS.textLight}
                   value={customerOrderCarrier}
                   onChangeText={setCustomerOrderCarrier}
                 />
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Estimated Delivery Date (YYYY-MM-DD)"
+                  placeholderTextColor={COLORS.textLight}
                   value={customerOrderEstimatedDeliveryDate}
                   onChangeText={setCustomerOrderEstimatedDeliveryDate}
                   keyboardType="numeric" // Use date picker in real app
@@ -229,6 +233,7 @@ const ButcherCustomerOrdersScreen = () => {
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Received By (Name or ID)"
+                  placeholderTextColor={COLORS.textLight}
                   value={customerOrderReceivedBy}
                   onChangeText={setCustomerOrderReceivedBy}
                 />

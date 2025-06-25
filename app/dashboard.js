@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import CustomerDashboard from './customer';
-// import AgentDashboard from './agent';
 import COLORS from './styles/colors';
 
 export default function DashboardRouter() {
@@ -48,7 +46,7 @@ export default function DashboardRouter() {
       switch (userRole) {
         case 'customer':
           router.replace(`/(customer)?name=${encodeURIComponent(userName)}`);
-          return; 
+          return;
         case 'butcher':
           router.replace(`/(butcher)?name=${encodeURIComponent(userName)}`);
           return;
@@ -94,10 +92,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.bg,
+    padding: 20,
   },
   errorText: {
     fontSize: 18,
-    color: COLORS.accent,
-    fontWeight: 'bold',
+    color: COLORS.danger,
+    textAlign: 'center',
   },
 });

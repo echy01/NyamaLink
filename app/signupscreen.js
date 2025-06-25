@@ -1,9 +1,10 @@
+// app/signupscreen.js
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert, 
+  Alert, // Keeping Alert for quick feedback
   Dimensions,
   ScrollView,
   StyleSheet,
@@ -11,12 +12,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator, 
+  ActivityIndicator, // Added for loading state
 } from "react-native";
 
-import globalStyles from './styles/globalStyles';
-import COLORS from './styles/colors';
-import api from './api';
+import COLORS from './styles/colors'; // Import your COLORS file
+import api from './api'; // Import your API utility
 
 const { width } = Dimensions.get("window");
 
@@ -29,11 +29,11 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false); // State for loading indicator
 
   const handleSignUp = async () => {
     if (!name || !email || !password || !confirmPassword || !role) {
-      Alert.alert("Error", "Please fill in all fields.");
+      Alert.alert("Error", "Please fill in all fields and select a role.");
       return;
     }
 
@@ -42,27 +42,29 @@ export default function SignUpScreen() {
       return;
     }
 
-    setLoading(true); 
+    setLoading(true); // Show loading indicator
     try {
+      // Use the API utility for signup
       const response = await api.signup({ name, email, password, role });
       
-      const { token, role: userRole, name: userName } = response.data; 
+      const { token, user } = response.data; // Assuming API returns token and user object with role and name
 
       await Alert.alert("Success", "Account created successfully! Please log in.");
+      // After successful signup and showing alert, navigate to login screen
       router.replace('/loginscreen'); 
 
     } catch (error) {
       console.error("Sign Up error:", error.response?.data || error.message);
       Alert.alert("Sign Up Failed", error.response?.data?.message || "Failed to create account. Please try again.");
     } finally {
-      setLoading(false); 
+      setLoading(false); // Hide loading indicator
     }
   };
 
   return (
     <View style={localStyles.safeArea}>
       <LinearGradient
-        colors={[COLORS.primary, COLORS.danger, '#8B0000']} 
+        colors={[COLORS.primary, COLORS.danger, '#8B0000']} // Consistent gradient with login
         style={localStyles.gradientContainer}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -117,6 +119,7 @@ export default function SignUpScreen() {
                   key={r}
                   style={[localStyles.roleButton, role === r && localStyles.selectedRole]}
                   onPress={() => setRole(r)}
+                  disabled={loading} // Disable role selection while loading
                 >
                   <Text style={[localStyles.roleText, role === r && localStyles.selectedRoleText]}>
                     {r.charAt(0).toUpperCase() + r.slice(1)}
@@ -156,13 +159,13 @@ const localStyles = StyleSheet.create({
   },
   gradientContainer: {
     flex: 1,
-    paddingTop: 80, 
+    paddingTop: 80, // Adjust for status bar and header space
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingBottom: 40, 
+    paddingBottom: 40, // Ensure content isn't cut off at the bottom
   },
   backButton: {
     position: "absolute",
@@ -238,7 +241,7 @@ const localStyles = StyleSheet.create({
     fontWeight: "bold",
   },
   signupButton: {
-    backgroundColor: COLORS.accent, 
+    backgroundColor: COLORS.accent, // Distinct accent color for the button
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -262,7 +265,7 @@ const localStyles = StyleSheet.create({
     fontSize: 15,
   },
   loginLink: {
-    color: COLORS.secondary,
     fontWeight: "bold",
+    color: COLORS.secondary,
   },
 });

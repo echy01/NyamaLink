@@ -1,26 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import COLORS from '../app/styles/colors'; // Corrected import path for colors
+import COLORS from '../app/styles/colors';
 
 const InfoCard = ({ icon, title, value, subtitle, imageSource, children }) => (
   <View style={styles.card}>
     {imageSource ? (
       <Image source={imageSource} style={styles.cardImage} resizeMode="cover" />
-    ) : (
-      // Render Ionicons as a fallback if no imageSource is provided
+    ) : typeof icon === 'string' ? (
       <Ionicons name={icon} size={30} color={COLORS.primary} style={styles.iconPlaceholder} />
+    ) : (
+      // If icon is a JSX element like <Image />
+      <View style={styles.iconPlaceholder}>{icon}</View>
     )}
-    
+
     <View style={styles.textContainer}>
-      {/* Ensure all potentially displayed text is within a <Text> component */}
-      {/* Explicitly convert to String to handle any non-string values gracefully */}
       <Text style={styles.title}>{String(title)}</Text>
       {value !== undefined && value !== null && <Text style={styles.value}>{String(value)}</Text>}
       {subtitle !== undefined && subtitle !== null && <Text style={styles.subtitle}>{String(subtitle)}</Text>}
-      
-      {/* The 'children' prop will typically contain other components (like Touchables with Text) */}
-      {children} 
+      {children}
     </View>
   </View>
 );
@@ -47,6 +45,10 @@ const styles = StyleSheet.create({
   },
   iconPlaceholder: {
     marginRight: 12,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   textContainer: {
     flex: 1,

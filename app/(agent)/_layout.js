@@ -1,78 +1,79 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import COLORS from '../styles/colors'; 
-import { Text } from 'react-native'; 
+import COLORS from '../styles/colors';
+import { Text } from 'react-native';
 
 const AgentLayout = () => {
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: true, 
+        headerShown: true,
         headerStyle: {
-          backgroundColor: COLORS.card, 
+          backgroundColor: COLORS.card,
           borderBottomWidth: 1,
           borderBottomColor: COLORS.border,
         },
         headerTitleStyle: {
-          color: COLORS.textDark, 
+          color: COLORS.textDark,
           fontWeight: '600',
         },
-        tabBarActiveTintColor: COLORS.primary, 
-        tabBarInactiveTintColor: COLORS.textLight, 
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textLight,
         tabBarStyle: {
-          backgroundColor: COLORS.card, 
+          backgroundColor: COLORS.card,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          height: 60, 
+          height: 60,
           paddingBottom: 5,
         },
         tabBarLabelStyle: {
-          fontSize: 12, 
+          fontSize: 12,
           fontWeight: '600',
         },
         tabBarIcon: ({ color, size }) => {
           let iconName;
-          if (route.name === 'index') { 
+          if (route.name === 'index') {
             iconName = 'home-outline';
           } else if (route.name === 'inventory') {
             iconName = 'cube-outline';
-          } else if (route.name === 'orders') { 
+          } else if (route.name === 'orders') {
             iconName = 'receipt-outline';
           } else if (route.name === 'butchers') {
             iconName = 'people-outline';
-          } else if (route.name === 'purchases') { 
+          } else if (route.name === 'purchases') {
             iconName = 'swap-horizontal-outline';
           } else if (route.name === 'profile') {
             iconName = 'person-outline';
           }
-          return <Ionicons name={iconName} size={size} color={color} />;
+          // Ensure a default icon name is provided if none of the above match
+          return <Ionicons name={iconName || 'alert-circle-outline'} size={size} color={color} />;
         },
       })}
     >
       <Tabs.Screen
-        name="index" 
+        name="index"
         options={{
-          title: 'Home', 
-          headerTitle: 'Agent Overview', 
+          title: 'Home',
+          headerTitle: 'Agent Overview',
         }}
       />
       <Tabs.Screen
-        name="inventory" 
+        name="inventory"
         options={{
           title: 'Inventory',
           headerTitle: 'Slaughterhouse Stock',
         }}
       />
       <Tabs.Screen
-        name="orders" 
+        name="orders"
         options={{
           title: 'Butcher Orders',
           headerTitle: 'Orders from Butchers',
         }}
       />
       <Tabs.Screen
-        name="butchers" 
+        name="butchers"
         options={{
           title: 'Butchers',
           headerTitle: 'Registered Butchers',
@@ -85,8 +86,8 @@ const AgentLayout = () => {
           headerTitle: 'My Supply Orders',
         }}
       />
-      <Tabs.Screen
-        name="profile" 
+       <Tabs.Screen
+        name="profile"
         options={{
           title: 'Profile',
           headerTitle: 'My Profile',

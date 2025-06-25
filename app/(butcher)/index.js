@@ -32,7 +32,7 @@ const ButcherHomeScreen = () => {
     try {
       const invRes = await api.getButcherInventory();
       const currentInventory = Array.isArray(invRes.data?.inventory) ? invRes.data.inventory : [];
-      const totalStock = currentInventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalStock = currentInventory.reduce((sum, item) => sum + Number(item.stock || 0), 0);
       setInventorySummary({
         totalStock: totalStock.toFixed(2), 
         distinctItems: currentInventory.length,
@@ -45,7 +45,7 @@ const ButcherHomeScreen = () => {
         totalOrders: currentOrders.length,
       });
 
-      const shOrdersRes = await api.getSlaughterhouseOrders();
+      const shOrdersRes = await api.getMySlaughterhouseOrders();
       const currentPurchases = Array.isArray(shOrdersRes.data?.orders) ? shOrdersRes.data.orders : [];
       setPurchaseSummary({
         pendingPurchases: currentPurchases.filter(purchase => purchase.status === 'pending').length,
