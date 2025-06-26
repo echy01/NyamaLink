@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import globalStyles from '../styles/globalStyles'; 
 import InfoCard from '../../components/InfoCard';    
 import api from '../api';                        
-import COLORS from '../styles/colors';             
+import COLORS from '../styles/colors'; 
+
 
 const ButcherPurchaseScreen = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -101,17 +102,18 @@ const ButcherPurchaseScreen = () => {
       const res = await api.initializePayment({
         amount: order.totalPrice,
         orderId: order._id,
+        email: order.butcherEmail || 'youremail@fallback.com', 
       });
 
       if (res.data?.paymentUrl) {
-        navigation.navigate('payment/PaymentWebView', {
+        navigation.navigate('payment/webview', {
           paymentUrl: res.data.paymentUrl,
         });
       } else {
         Alert.alert('Payment Error', 'Payment URL not found.');
       }
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data || err.message);
       Alert.alert('Payment Error', 'Could not initiate payment.');
     }
   };

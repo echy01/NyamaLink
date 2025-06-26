@@ -22,8 +22,8 @@ import { useLocalSearchParams } from 'expo-router';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.jpeg';
-import pork from '../../assets/images/pork.jpeg';
+import chicken from '../../assets/images/chicken.png';
+import pork from '../../assets/images/pork.png';
 import lamb from '../../assets/images/lamb.png';
 import meatDefault from '../../assets/images/meat_default.jpeg';
 

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://10.71.140.125:5000/api";
+const API_BASE_URL = "http://192.168.100.46:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -43,6 +43,9 @@ const api = {
       deliveryConfirmation,
     }),
 
+  // ✅ Butcher → Agent view
+  getAgentInventory: () => instance.get("/agent/inventory"),
+
   //  Butcher Endpoints
   getButcherInventory: () => instance.get("/butcher/inventory"),
   addInventoryItem: (itemData) =>
@@ -64,7 +67,6 @@ const api = {
       deliveryConfirmation,
     }),
 
-  // ✅ Renamed from getSlaughterhouseOrders to clearer getMySlaughterhouseOrders
   getMySlaughterhouseOrders: () =>
     instance.get("/butcher/slaughterhouse-orders"),
 
@@ -82,6 +84,10 @@ const api = {
       deliveryConfirmation,
     }),
 
+  // ✅ Butcher places order to agent
+  createAgentPurchaseOrder: ({ meatId, quantity }) =>
+    instance.post("/purchase", { meatId, quantity }),
+
   //  Customer Endpoints
   getAvailableMeatForCustomers: () => instance.get("/customer/available-meat"),
   placeCustomerOrder: (meatId, quantity) =>
@@ -94,8 +100,7 @@ const api = {
     }),
 
   //  Payment Endpoints
-  initializePayment: (payload) =>
-    instance.post(`/payment/initialize`, payload),
+  initializePayment: (payload) => instance.post(`/payment/initialize`, payload),
   verifyPayment: (transactionRef) =>
     instance.get(`/payment/verify/${transactionRef}`),
 };

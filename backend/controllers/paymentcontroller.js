@@ -2,12 +2,9 @@ import axios from 'axios';
 import asyncHandler from 'express-async-handler';
 import crypto from 'crypto';
 import Order from '../models/order.js';
+import PurchaseOrder from '../models/purchase.js'; 
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-
-console.log("🔑 Paystack Key:", PAYSTACK_SECRET_KEY);
-
-// 🔐 Helper to create headers
 
 const getPaystackHeaders = () => ({
   Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -17,31 +14,42 @@ const getPaystackHeaders = () => ({
 // 📤 POST /api/payments/initiate
 export const initiatePayment = asyncHandler(async (req, res) => {
   console.log("📡 Payment Initiation Hit");
+
   const { orderId } = req.body;
-  const email = req.user?.email;
+  const email = req.user?.email || req.body.email;
 
   if (!email) {
     res.status(400);
     throw new Error('User email not found');
   }
 
-  const order = await Order.findById(orderId);
-  if (!order) {
+  let orderOrPurchase = await Order.findById(orderId);
+  if (!orderOrPurchase) {
+    orderOrPurchase = await PurchaseOrder.findById(orderId);
+  }
+
+  if (!orderOrPurchase) {
     res.status(404);
-    throw new Error('Order not found');
+    throw new Error('Order or Purchase not found');
   }
 
-  if (order.paymentStatus?.status === 'paid') {
+  if (orderOrPurchase.paymentStatus?.status === 'paid') {
     res.status(400);
-    throw new Error('Order is already paid');
+    throw new Error('Already paid');
   }
 
-  const amountInKobo = Math.round(order.totalPrice * 100);
+  if (!orderOrPurchase.totalPrice || isNaN(orderOrPurchase.totalPrice)) {
+    res.status(400);
+    console.log("🧾 Debug totalPrice:", orderOrPurchase.totalPrice);
+    throw new Error('Invalid or missing total price for payment');
+  }
+
+  const amountInKobo = Math.round(orderOrPurchase.totalPrice * 100);
 
   console.log("🔥 Sending to Paystack:", {
     email,
     amount: amountInKobo,
-    metadata: { orderId: order._id.toString() }
+    metadata: { orderId: orderOrPurchase._id.toString() }
   });
 
   const response = await axios.post(
@@ -50,9 +58,9 @@ export const initiatePayment = asyncHandler(async (req, res) => {
       email,
       amount: amountInKobo,
       metadata: {
-        orderId: order._id.toString(),
+        orderId: orderOrPurchase._id.toString(),
       },
-      redirect_url: 'https://d849-197-232-94-230.ngrok-free.app/payment-success', 
+      redirect_url: 'https://d849-197-232-94-230.ngrok-free.app/payment-success',
     },
     {
       headers: getPaystackHeaders(),
@@ -66,7 +74,6 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 });
 
 
-// 📥 POST /api/payments/webhook
 // 📥 POST /api/payments/webhook
 export const handlePaystackWebhook = asyncHandler(async (req, res) => {
   const secret = PAYSTACK_SECRET_KEY;
@@ -92,10 +99,12 @@ export const handlePaystackWebhook = asyncHandler(async (req, res) => {
     if (!orderId) return res.status(400).send('Missing orderId in metadata');
 
     try {
-      const order = await Order.findById(orderId);
-      if (!order) return res.status(404).send('Order not found');
+      let order = await Order.findById(orderId);
+      if (!order) {
+        order = await PurchaseOrder.findById(orderId);
+        if (!order) return res.status(404).send('Order not found');
+      }
 
-      // ✅ Safely parse transaction date
       const parsedDate = new Date(transaction_date);
       const paymentDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 

@@ -5,6 +5,7 @@ import agentroutes from './routes/agentroutes.js';
 import butcherroutes from './routes/butcherroutes.js';
 import customerroutes from './routes/customerroutes.js'; 
 import paymentRoutes from './routes/paymentroutes.js'; 
+import purchaseroutes from './routes/purchaseroutes.js'; 
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/agent', agentroutes);
 app.use('/api/butcher', butcherroutes);
 app.use('/api/customer', customerroutes); 
 app.use('/api/payment', paymentRoutes);
+app.use('/api/purchase', purchaseroutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

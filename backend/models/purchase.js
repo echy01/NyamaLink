@@ -11,6 +11,14 @@ const PurchaseSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  pricePerKgAtOrder: {
+    type: Number,
+    required: true
+  },
+  totalPrice: {
+    type: Number,
+    required: true
+  },
   buyerType: {
     type: String,
     enum: ['butcher', 'agent'], 
@@ -23,7 +31,7 @@ const PurchaseSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'processing', 'ready_for_dispatch', 'dispatched', 'arrived', 'completed', 'cancelled'], // Expanded statuses
+    enum: ['pending', 'accepted', 'processing', 'ready_for_dispatch', 'dispatched', 'arrived', 'completed', 'cancelled'],
     default: 'pending'
   },
   meatType: { 
@@ -37,7 +45,7 @@ const PurchaseSchema = new mongoose.Schema({
 
   dispatchDetails: {
     trackingNumber: { type: String },
-    carrier: { type: String }, // e.g., "In-house delivery", "Third-party Courier"
+    carrier: { type: String },
     dispatchDate: { type: Date },
     estimatedDeliveryDate: { type: Date },
   },
@@ -68,8 +76,11 @@ const PurchaseSchema = new mongoose.Schema({
   }
 });
 
-
+// Auto-update totalPrice and updatedAt
 PurchaseSchema.pre('save', function (next) {
+  if (this.quantity && this.pricePerKgAtOrder) {
+    this.totalPrice = this.quantity * this.pricePerKgAtOrder;
+  }
   this.updatedAt = Date.now();
   next();
 });

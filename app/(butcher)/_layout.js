@@ -83,6 +83,13 @@ const ButcherLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="purchase-from-agents"
+        options={{
+          title: 'Agent Orders',
+          headerTitle: 'Buy from Agents',
+        }}
+      />
+      <Tabs.Screen
         name="purchase"
         options={{
           title: 'Purchase',
