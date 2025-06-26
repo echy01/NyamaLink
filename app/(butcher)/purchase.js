@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import globalStyles from '../styles/globalStyles'; 
@@ -22,30 +23,27 @@ const ButcherPurchaseScreen = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
-  // Purchase Order Management Modal
   const [showUpdatePurchaseModal, setShowUpdatePurchaseModal] = useState(false);
   const [currentPurchaseOrder, setCurrentPurchaseOrder] = useState(null);
   const [newPurchaseOrderStatus, setNewPurchaseOrderStatus] = useState('');
-  // Pickup details for purchase order
   const [purchaseOrderPickupTime, setPurchaseOrderPickupTime] = useState('');
   const [purchaseOrderPickedUpBy, setPurchaseOrderPickedUpBy] = useState('');
-  // Reception confirmation for purchase order
   const [purchaseOrderReceivedBy, setPurchaseOrderReceivedBy] = useState('');
   const [purchaseOrderConditionAtReception, setPurchaseOrderConditionAtReception] = useState('');
 
-  // Define allowed purchase order statuses for the butcher to choose from
   const PURCHASE_ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'ready_for_pickup', 'picked_up', 'received', 'cancelled'];
 
   const fetchPurchaseOrders = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const purchaseOrdersRes = await api.getMySlaughterhouseOrders();
-      setPurchaseOrders(Array.isArray(purchaseOrdersRes.data?.orders) ? purchaseOrdersRes.data.orders : []);
+      const res = await api.getMySlaughterhouseOrders();
+      setPurchaseOrders(Array.isArray(res.data?.orders) ? res.data.orders : []);
     } catch (err) {
-      console.error('❌ Butcher Purchase Orders Load Error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Failed to load purchase orders. Please try again.');
+      console.error('❌ Load Error:', err.response?.data || err.message);
+      Alert.alert('Error', 'Failed to load purchase orders.');
     } finally {
       setRefreshing(false);
       setLoading(false);
@@ -61,25 +59,23 @@ const ButcherPurchaseScreen = () => {
       return Alert.alert('Validation Error', 'Please select an order and status.');
     }
     if (!PURCHASE_ORDER_STATUS_OPTIONS.includes(newPurchaseOrderStatus)) {
-        return Alert.alert('Invalid Status', 'Please select a valid status: ' + PURCHASE_ORDER_STATUS_OPTIONS.join(', '));
+      return Alert.alert('Invalid Status', 'Allowed statuses: ' + PURCHASE_ORDER_STATUS_OPTIONS.join(', '));
     }
 
     const pickupDetails = {};
     const receptionConfirmation = {};
 
-    // Collect pickup details if status implies pickup
-    if (newPurchaseOrderStatus === 'picked_up' || newPurchaseOrderStatus === 'received') {
+    if (['picked_up', 'received'].includes(newPurchaseOrderStatus)) {
       if (!purchaseOrderPickupTime || !purchaseOrderPickedUpBy) {
-        return Alert.alert('Validation Error', 'Pickup time and picked up by are required for picked_up/received status.');
+        return Alert.alert('Validation Error', 'Pickup time and picked up by are required.');
       }
       pickupDetails.pickupTime = new Date(purchaseOrderPickupTime).toISOString();
       pickupDetails.pickedUpBy = purchaseOrderPickedUpBy;
     }
 
-    // Collect reception confirmation if status implies reception
     if (newPurchaseOrderStatus === 'received') {
       if (!purchaseOrderReceivedBy || !purchaseOrderConditionAtReception) {
-        return Alert.alert('Validation Error', 'Received by and condition at reception are required for received status.');
+        return Alert.alert('Validation Error', 'Reception details are required.');
       }
       receptionConfirmation.receivedBy = purchaseOrderReceivedBy;
       receptionConfirmation.conditionAtReception = purchaseOrderConditionAtReception;
@@ -89,22 +85,34 @@ const ButcherPurchaseScreen = () => {
       await api.updatePurchaseOrder(
         currentPurchaseOrder._id,
         newPurchaseOrderStatus,
-        Object.keys(pickupDetails).length > 0 ? pickupDetails : undefined, 
+        Object.keys(pickupDetails).length > 0 ? pickupDetails : undefined,
         Object.keys(receptionConfirmation).length > 0 ? receptionConfirmation : undefined
       );
       setShowUpdatePurchaseModal(false);
-      setCurrentPurchaseOrder(null);
-      setNewPurchaseOrderStatus('');
-      // Clear pickup/reception states after successful update
-      setPurchaseOrderPickupTime('');
-      setPurchaseOrderPickedUpBy('');
-      setPurchaseOrderReceivedBy('');
-      setPurchaseOrderConditionAtReception('');
       fetchPurchaseOrders();
-      Alert.alert('Success', 'Purchase order status updated successfully!');
+      Alert.alert('Success', 'Purchase order updated.');
     } catch (err) {
-      Alert.alert('Update Purchase Order Error', err.response?.data?.message || err.message || 'Could not update purchase order status.');
-      console.error('Update purchase order status error:', err.response?.data || err.message);
+      Alert.alert('Update Error', err.response?.data?.message || err.message || 'Could not update status.');
+    }
+  };
+
+  const handleInitiatePayment = async (order) => {
+    try {
+      const res = await api.initializePayment({
+        amount: order.totalPrice,
+        orderId: order._id,
+      });
+
+      if (res.data?.paymentUrl) {
+        navigation.navigate('payment/PaymentWebView', {
+          paymentUrl: res.data.paymentUrl,
+        });
+      } else {
+        Alert.alert('Payment Error', 'Payment URL not found.');
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Payment Error', 'Could not initiate payment.');
     }
   };
 
@@ -112,68 +120,54 @@ const ButcherPurchaseScreen = () => {
     <SafeAreaView style={globalStyles.container}>
       <View style={localStyles.contentContainer}>
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         ) : (
           <FlatList
             data={purchaseOrders}
-            renderItem={({ item }) => {
-              if (!item || !item._id) {
-                console.warn("Skipping malformed purchase order item:", item);
-                return null;
-              }
-
-              return (
-                <InfoCard
-                  icon="basket-outline"
-                  title={`Slaughterhouse: ${String(item.slaughterhouseName || 'N/A')}`}
-                  value={`Ordered: ${String(item.meatType || 'N/A')} | Quantity: ${String(item.quantity || '0')}kg`}
-                  subtitle={
-                    <Text>
-                      <Text style={{fontWeight: 'bold'}}>Status:</Text> {String(item.status || 'N/A')}
-                      {item.pickupDetails && item.pickupDetails.pickupTime && (
-                        `\nPicked Up: ${new Date(item.pickupDetails.pickupTime).toLocaleString()}`
-                      )}
-                      {item.pickupDetails && item.pickupDetails.pickedUpBy && (
-                        ` by ${String(item.pickupDetails.pickedUpBy)}`
-                      )}
-                      {item.receptionConfirmation && item.receptionConfirmation.receivedBy && (
-                        `\nReceived By: ${String(item.receptionConfirmation.receivedBy)}`
-                      )}
-                      {item.receptionConfirmation && item.receptionConfirmation.receivedDate && (
-                        ` on ${new Date(item.receptionConfirmation.receivedDate).toLocaleString()}`
-                      )}
-                      {item.receptionConfirmation && item.receptionConfirmation.conditionAtReception && (
-                        ` (Condition: ${String(item.receptionConfirmation.conditionAtReception)})`
-                      )}
-                      {`\nTotal: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}
-                    </Text>
-                  }
-                >
-                  <View style={localStyles.cardActions}>
+            renderItem={({ item }) => (
+              <InfoCard
+                icon="basket-outline"
+                title={`Slaughterhouse: ${item.slaughterhouseName}`}
+                value={`Ordered: ${item.meatType} | Qty: ${item.quantity}kg`}
+                subtitle={
+                  <Text>
+                    <Text style={{ fontWeight: 'bold' }}>Status:</Text> {item.status}
+                    {item.pickupDetails?.pickupTime && `\nPicked Up: ${new Date(item.pickupDetails.pickupTime).toLocaleString()}`}
+                    {item.pickupDetails?.pickedUpBy && ` by ${item.pickupDetails.pickedUpBy}`}
+                    {item.receptionConfirmation?.receivedBy && `\nReceived By: ${item.receptionConfirmation.receivedBy}`}
+                    {item.receptionConfirmation?.conditionAtReception && ` (Condition: ${item.receptionConfirmation.conditionAtReception})`}
+                    {`\nTotal: KES ${item.totalPrice} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}
+                  </Text>
+                }
+              >
+                <View style={localStyles.cardActions}>
+                  {item.paymentStatus?.status !== 'paid' && (
                     <TouchableOpacity
-                      style={[
-                        globalStyles.button,
-                        localStyles.smallActionButton,
-                        { backgroundColor: item.status === 'received' ? COLORS.success : COLORS.warning } // Use 'received'
-                      ]}
-                      onPress={() => {
-                        setCurrentPurchaseOrder(item);
-                        setNewPurchaseOrderStatus(String(item.status));
-                        // Populate existing pickup/reception details if available
-                        setPurchaseOrderPickupTime(item.pickupDetails?.pickupTime ? new Date(item.pickupDetails.pickupTime).toISOString().split('.')[0] : ''); // Format to YYYY-MM-DDTHH:MM:SS
-                        setPurchaseOrderPickedUpBy(item.pickupDetails?.pickedUpBy || '');
-                        setPurchaseOrderReceivedBy(item.receptionConfirmation?.receivedBy || '');
-                        setPurchaseOrderConditionAtReception(item.receptionConfirmation?.conditionAtReception || '');
-                        setShowUpdatePurchaseModal(true);
-                      }}
+                      style={[globalStyles.button, localStyles.smallActionButton]}
+                      onPress={() => handleInitiatePayment(item)}
                     >
-                      <Ionicons name="pencil-outline" size={16} color="#fff" />
-                      <Text style={globalStyles.buttonText}>Update Status</Text>
+                      <Text style={globalStyles.buttonText}>Pay Now</Text>
                     </TouchableOpacity>
-                  </View>
-                </InfoCard>
-              );
-            }}
+                  )}
+
+                  <TouchableOpacity
+                    style={[globalStyles.button, localStyles.smallActionButton]}
+                    onPress={() => {
+                      setCurrentPurchaseOrder(item);
+                      setNewPurchaseOrderStatus(item.status);
+                      setPurchaseOrderPickupTime(item.pickupDetails?.pickupTime || '');
+                      setPurchaseOrderPickedUpBy(item.pickupDetails?.pickedUpBy || '');
+                      setPurchaseOrderReceivedBy(item.receptionConfirmation?.receivedBy || '');
+                      setPurchaseOrderConditionAtReception(item.receptionConfirmation?.conditionAtReception || '');
+                      setShowUpdatePurchaseModal(true);
+                    }}
+                  >
+                    <Ionicons name="pencil-outline" size={16} color="#fff" />
+                    <Text style={globalStyles.buttonText}>Update Status</Text>
+                  </TouchableOpacity>
+                </View>
+              </InfoCard>
+            )}
             keyExtractor={(item) => String(item._id)}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchPurchaseOrders} />}
             ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No purchase orders found.</Text>}
@@ -181,66 +175,89 @@ const ButcherPurchaseScreen = () => {
         )}
       </View>
 
-      {/* Update Purchase Order Status Modal */}
-      <Modal visible={showUpdatePurchaseModal} animationType="slide" transparent={true}>
+      {/* Modal for updating purchase order status */}
+      <Modal
+        visible={showUpdatePurchaseModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowUpdatePurchaseModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Update Purchase Order Status</Text>
-            {currentPurchaseOrder && (
-              <Text style={localStyles.modalSubtitle}>Order from {String(currentPurchaseOrder.slaughterhouseName || 'N/A')} ({String(currentPurchaseOrder.meatType || 'N/A')})</Text>
-            )}
-            <TextInput
-              style={globalStyles.input}
-              placeholder="New Status (e.g., confirmed, picked_up, received)"
-              value={newPurchaseOrderStatus}
-              onChangeText={setNewPurchaseOrderStatus}
-            />
+            <Text style={localStyles.modalTitle}>Update Purchase Order</Text>
+            <Text style={localStyles.modalSubtitle}>
+              Order: {currentPurchaseOrder?.meatType} ({currentPurchaseOrder?.quantity}kg)
+            </Text>
+            <Text style={{ marginBottom: 8 }}>Status:</Text>
+            {PURCHASE_ORDER_STATUS_OPTIONS.map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={[
+                  localStyles.statusOption,
+                  newPurchaseOrderStatus === status && localStyles.selectedStatusOption,
+                ]}
+                onPress={() => setNewPurchaseOrderStatus(status)}
+              >
+                <Text
+                  style={{
+                    color: newPurchaseOrderStatus === status ? COLORS.primary : COLORS.textDark,
+                  }}
+                >
+                  {status.replace(/_/g, ' ')}
+                </Text>
+              </TouchableOpacity>
+            ))}
 
-            {/* Conditional Inputs for Pickup Details */}
-            {(newPurchaseOrderStatus === 'picked_up' || newPurchaseOrderStatus === 'received') && (
+            {['picked_up', 'received'].includes(newPurchaseOrderStatus) && (
               <>
-                <Text style={localStyles.sectionHeaderSmall}>Pickup Details:</Text>
+                <Text style={{ marginTop: 12 }}>Pickup Time (YYYY-MM-DD HH:mm):</Text>
                 <TextInput
-                  style={globalStyles.input}
-                  placeholder="Pickup Time (YYYY-MM-DDTHH:MM:SS)"
+                  style={localStyles.input}
                   value={purchaseOrderPickupTime}
                   onChangeText={setPurchaseOrderPickupTime}
-                  keyboardType="default" // Consider a datetime picker in real app
+                  placeholder="e.g. 2024-06-26 14:00"
                 />
+                <Text style={{ marginTop: 8 }}>Picked Up By:</Text>
                 <TextInput
-                  style={globalStyles.input}
-                  placeholder="Picked Up By (Name/ID)"
+                  style={localStyles.input}
                   value={purchaseOrderPickedUpBy}
                   onChangeText={setPurchaseOrderPickedUpBy}
+                  placeholder="Name"
                 />
               </>
             )}
 
-            {/* Conditional Inputs for Reception Confirmation */}
             {newPurchaseOrderStatus === 'received' && (
               <>
-                <Text style={localStyles.sectionHeaderSmall}>Reception Confirmation:</Text>
+                <Text style={{ marginTop: 8 }}>Received By:</Text>
                 <TextInput
-                  style={globalStyles.input}
-                  placeholder="Received By (Name/ID)"
+                  style={localStyles.input}
                   value={purchaseOrderReceivedBy}
                   onChangeText={setPurchaseOrderReceivedBy}
+                  placeholder="Name"
                 />
+                <Text style={{ marginTop: 8 }}>Condition at Reception:</Text>
                 <TextInput
-                  style={globalStyles.input}
-                  placeholder="Condition at Reception (e.g., good, damaged)"
+                  style={localStyles.input}
                   value={purchaseOrderConditionAtReception}
                   onChangeText={setPurchaseOrderConditionAtReception}
+                  placeholder="e.g. Good, Damaged"
                 />
               </>
             )}
 
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowUpdatePurchaseModal(false)}>
-                <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
+              <TouchableOpacity
+                style={[globalStyles.button, { flex: 1, marginRight: 8 }]}
+                onPress={handleUpdatePurchaseOrder}
+              >
+                <Text style={globalStyles.buttonText}>Update</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handleUpdatePurchaseOrder}>
-                <Text style={globalStyles.buttonText}>Update Status</Text>
+              <TouchableOpacity
+                style={[globalStyles.button, { flex: 1, backgroundColor: COLORS.border }]}
+                onPress={() => setShowUpdatePurchaseModal(false)}
+              >
+                <Text style={[globalStyles.buttonText, { color: COLORS.textDark }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -253,7 +270,6 @@ const ButcherPurchaseScreen = () => {
 const localStyles = StyleSheet.create({
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 0,
     paddingTop: 10,
   },
   loadingIndicator: {
@@ -261,16 +277,18 @@ const localStyles = StyleSheet.create({
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     marginTop: 10,
   },
   smallActionButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    marginLeft: 8,
-    minWidth: 90,
+    marginLeft: 4,
+    minWidth: 100,
     justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -308,16 +326,27 @@ const localStyles = StyleSheet.create({
     justifyContent: 'space-around',
     marginTop: 20,
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  sectionHeaderSmall: { 
-    fontSize: 16,
-    fontWeight: '600',
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 4,
+    backgroundColor: COLORS.bg,
     color: COLORS.textDark,
-    marginTop: 10,
-    marginBottom: 5,
+  },
+  statusOption: {
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 6,
+    marginRight: 6,
+    marginTop: 2,
+  },
+  selectedStatusOption: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '22',
   },
 });
 

@@ -76,6 +76,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     quantity: parseFloat(quantity),
     totalPrice,
     status: 'pending',
+    paymentStatus: { status: 'unpaid' },
   });
 
   await newOrder.save();
@@ -118,13 +119,13 @@ const getMyOrders = asyncHandler(async (req, res) => {
     quantity: order.quantity,
     totalPrice: order.totalPrice,
     status: order.status,
+    paymentStatus: order.paymentStatus,
     createdAt: order.createdAt,
   }));
 
-  res.json(formattedOrders);
+  res.json({ orders: formattedOrders }); // ✅ Corrected to return with named key
 });
 
-// ✅ Export all together at the bottom
 export {
   getAvailableMeat,
   placeOrder,

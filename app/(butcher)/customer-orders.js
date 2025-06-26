@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import globalStyles from '../styles/globalStyles'; 
 import InfoCard from '../../components/InfoCard';    
@@ -128,26 +129,23 @@ const ButcherCustomerOrdersScreen = () => {
                   title={`Customer: ${String(item.customerName || 'N/A')}`}
                   value={`Order for: ${String(item.meatType || 'N/A')} | Quantity: ${String(item.quantity || '0')}kg`}
                   subtitle={
-                    <Text>
-                      <Text style={{fontWeight: 'bold'}}>Status:</Text> {String(item.status || 'N/A')}
-                      {item.dispatchDetails && item.dispatchDetails.trackingNumber && (
-                        <Text>{`\nTracking: ${String(item.dispatchDetails.trackingNumber)}`}</Text>
-                      )}
-                      {item.dispatchDetails && item.dispatchDetails.carrier && (
-                        <Text>{`\nCarrier: ${String(item.dispatchDetails.carrier)}`}</Text>
-                      )}
-                      {item.dispatchDetails && item.dispatchDetails.estimatedDeliveryDate && (
-                        <Text>{`\nEst. Delivery: ${new Date(item.dispatchDetails.estimatedDeliveryDate).toLocaleDateString()}`}</Text>
-                      )}
-                      {item.deliveryConfirmation && item.deliveryConfirmation.receivedBy && (
-                        <Text>{`\nReceived By: ${String(item.deliveryConfirmation.receivedBy)}`}</Text>
-                      )}
-                      {item.deliveryConfirmation && item.deliveryConfirmation.receivedDate && (
-                        <Text>{` on ${new Date(item.deliveryConfirmation.receivedDate).toLocaleDateString()}`}</Text>
-                      )}
-                      <Text>{`\nTotal: KES ${String(item.totalPrice || '0')} | Placed: ${new Date(item.createdAt).toLocaleDateString()}`}</Text>
-                    </Text>
-                  }
+                    [
+                        `Status: ${item.status || 'N/A'}`,
+                        item.dispatchDetails?.trackingNumber ? `Tracking: ${item.dispatchDetails.trackingNumber}` : null,
+                        item.dispatchDetails?.carrier ? `Carrier: ${item.dispatchDetails.carrier}` : null,
+                        item.dispatchDetails?.estimatedDeliveryDate
+                        ? `Est. Delivery: ${new Date(item.dispatchDetails.estimatedDeliveryDate).toLocaleDateString()}`
+                        : null,
+                        item.deliveryConfirmation?.receivedBy ? `Received By: ${item.deliveryConfirmation.receivedBy}` : null,
+                        item.deliveryConfirmation?.receivedDate
+                        ? `Received On: ${new Date(item.deliveryConfirmation.receivedDate).toLocaleDateString()}`
+                        : null,
+                        `Total: KES ${item.totalPrice || '0'}`,
+                        `Placed: ${new Date(item.createdAt).toLocaleDateString()}`,
+                    ]
+                        .filter(Boolean)
+                        .join(' | ')
+                    }
                 >
                   <View style={localStyles.cardActions}>
                     <TouchableOpacity
@@ -189,13 +187,18 @@ const ButcherCustomerOrdersScreen = () => {
             {currentOrder && (
               <Text style={localStyles.modalSubtitle}>Order for {String(currentOrder.customerName || 'N/A')} ({String(currentOrder.meatType || 'N/A')})</Text>
             )}
-            <TextInput
-              style={globalStyles.input}
-              placeholder="New Status (e.g., accepted, processing, dispatched, completed)"
-              placeholderTextColor={COLORS.textLight}
-              value={newOrderStatus}
-              onChangeText={setNewOrderStatus}
-            />
+            <View style={[globalStyles.input, { padding: 0 }]}>
+            <Picker
+                selectedValue={newOrderStatus}
+                onValueChange={(itemValue) => setNewOrderStatus(itemValue)}
+                style={{ height: 50 }}
+            >
+                <Picker.Item label="Select Status" value="" enabled={false} />
+                {CUSTOMER_ORDER_STATUS_OPTIONS.map((status) => (
+                <Picker.Item key={status} label={status} value={status} />
+                ))}
+            </Picker>
+            </View>
 
             {/* Conditional Inputs for Dispatch Details */}
             {(newOrderStatus === 'dispatched' || newOrderStatus === 'arrived' || newOrderStatus === 'completed') && (
@@ -230,13 +233,24 @@ const ButcherCustomerOrdersScreen = () => {
             {(newOrderStatus === 'arrived' || newOrderStatus === 'completed') && (
               <>
                 <Text style={localStyles.sectionHeaderSmall}>Delivery Confirmation:</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Received By (Name or ID)"
-                  placeholderTextColor={COLORS.textLight}
-                  value={customerOrderReceivedBy}
-                  onChangeText={setCustomerOrderReceivedBy}
-                />
+                <View style={[globalStyles.input, { paddingHorizontal: 10 }]}>
+                <Text style={{ color: COLORS.textDark, marginBottom: 5 }}>Select New Status</Text>
+                {CUSTOMER_ORDER_STATUS_OPTIONS.map((status) => (
+                    <TouchableOpacity
+                    key={status}
+                    onPress={() => setNewOrderStatus(status)}
+                    style={{
+                        paddingVertical: 8,
+                        borderBottomColor: COLORS.border,
+                        borderBottomWidth: 1,
+                    }}
+                    >
+                    <Text style={{ color: newOrderStatus === status ? COLORS.primary : COLORS.textDark }}>
+                        {status}
+                    </Text>
+                    </TouchableOpacity>
+                ))}
+                </View>
               </>
             )}
 

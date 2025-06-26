@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.100.46:5000/api";
+const API_BASE_URL = "http://10.71.140.125:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -18,7 +18,7 @@ instance.interceptors.request.use(async (config) => {
 const api = {
   //  Auth Endpoints
   login: (credentials) => instance.post("/auth/login", credentials),
-  signup: (data) => instance.post("/auth/register", data),
+  signup: (data) => instance.post("/auth/signup", data),
   getProfile: () => instance.get("/auth/profile"),
 
   //  Agent (Slaughterhouse) Endpoints
@@ -94,8 +94,8 @@ const api = {
     }),
 
   //  Payment Endpoints
-  initializePayment: (orderId, amount, email) =>
-    instance.post(`/payment/initialize`, { orderId, amount, email }),
+  initializePayment: (payload) =>
+    instance.post(`/payment/initialize`, payload),
   verifyPayment: (transactionRef) =>
     instance.get(`/payment/verify/${transactionRef}`),
 };

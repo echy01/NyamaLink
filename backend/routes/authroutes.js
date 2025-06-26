@@ -9,7 +9,7 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup Route
-router.post('/signup', async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
