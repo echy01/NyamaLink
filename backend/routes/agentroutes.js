@@ -5,8 +5,8 @@ import {
   getButcheryOrders,
   getButchers,
   getAvailableMeatForPurchase,
-  placeMeatOrder, // ✅ correct export name from controller
-  getMyPurchaseOrders,
+  placeMeatOrder, 
+  // getMyPurchaseOrders,
   updateButcherOrderStatus,
 } from '../controllers/agentcontroller.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -26,9 +26,8 @@ router.put('/orders/:id/status', updateButcherOrderStatus);
 // 📖 Butcher directory
 router.get('/butchers', getButchers);
 
-// 🛒 Slaughterhouse purchases
+// // 🛒 Slaughterhouse purchases
 router.get('/purchase/available', getAvailableMeatForPurchase);
-router.post('/purchase/order', placeMeatOrder); // ✅ corrected
-router.get('/purchase/myorders', getMyPurchaseOrders);
+router.post('/purchase/order', placeMeatOrder);
 
 export default router;

@@ -125,9 +125,22 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
   res.json({ orders: formattedOrders }); // ✅ Corrected to return with named key
 });
+const getInventoryByButcherId = asyncHandler(async (req, res) => {
+  const butcherId = req.params.butcherId;
+
+  const inventory = await Inventory.find({
+    ownerId: butcherId,
+    ownerType: 'butcher',
+    isPublic: true,
+    quantity: { $gt: 0 },
+  }).sort({ createdAt: -1 });
+
+  res.status(200).json({ inventory });
+});
 
 export {
   getAvailableMeat,
   placeOrder,
   getMyOrders,
+  getInventoryByButcherId,
 };

@@ -53,12 +53,12 @@ const AgentHomeScreen = () => {
         totalButchers: currentButchers.length,
       });
 
-      const purchaseOrdersRes = await api.getMyPurchaseOrders();
-      const currentPurchases = Array.isArray(purchaseOrdersRes.data) ? purchaseOrdersRes.data : [];
-      setPurchaseSummary({
-        pendingPurchases: currentPurchases.filter(purchase => purchase.status === 'pending').length,
-        totalPurchases: currentPurchases.length,
-      });
+      // const purchaseOrdersRes = await api.getMyPurchaseOrders();
+      // const currentPurchases = Array.isArray(purchaseOrdersRes.data) ? purchaseOrdersRes.data : [];
+      // setPurchaseSummary({
+      //   pendingPurchases: currentPurchases.filter(purchase => purchase.status === 'pending').length,
+      //   totalPurchases: currentPurchases.length,
+      // });
 
     } catch (err) {
       console.error('❌ Agent Home Load Error:', err.response?.data || err.message);
@@ -106,12 +106,12 @@ const AgentHomeScreen = () => {
               subtitle="View all registered butcher profiles"
             />
 
-            <InfoCard
+            {/* <InfoCard
               icon="swap-horizontal-outline"
               title="My Supply Orders"
               value={`${String(purchaseSummary.pendingPurchases)} Pending`}
               subtitle={`Total: ${String(purchaseSummary.totalPurchases)} orders from other agents`}
-            />
+            /> */}
 
             {/* You can add more summary cards or quick action buttons here */}
           </View>

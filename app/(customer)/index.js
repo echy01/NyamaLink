@@ -1,29 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
-  TouchableOpacity,
+  Modal,
   RefreshControl,
   StyleSheet,
-  Modal,
+  Text,
   TextInput,
-  Alert,
-  Image,
-  ActivityIndicator,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import globalStyles from '../styles/globalStyles';
 import InfoCard from '../../components/InfoCard';
 import api from '../api';
 import COLORS from '../styles/colors';
+import globalStyles from '../styles/globalStyles';
 
 import beef from '../../assets/images/beef.png';
-import goat from '../../assets/images/goat.png';
 import chicken from '../../assets/images/chicken.png';
-import pork from '../../assets/images/pork.png';
+import goat from '../../assets/images/goat.png';
 import lamb from '../../assets/images/lamb.png';
 import meatDefault from '../../assets/images/meat_default.jpeg';
+import pork from '../../assets/images/pork.png';
 
 const meatImages = {
   beef,
@@ -35,6 +35,7 @@ const meatImages = {
 };
 
 const CustomerBrowseMeatScreen = () => {
+  const router = useRouter();
   const [availableMeat, setAvailableMeat] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -92,6 +93,12 @@ const CustomerBrowseMeatScreen = () => {
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={localStyles.contentContainer}>
+        <TouchableOpacity
+        style={globalStyles.button}
+        onPress={() => router.push('/(modals)/customernearbybutcheries')}
+        >
+          <Text style={globalStyles.buttonText}>Find Butcheries Near Me</Text>
+        </TouchableOpacity>        
         {loading && !refreshing ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (

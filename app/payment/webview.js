@@ -15,7 +15,10 @@ const PaymentWebView = () => {
           source={{ uri: paymentUrl }}
           onNavigationStateChange={(navState) => {
             if (navState.url.includes('payment-success')) {
-              navigation.navigate('customer/my-orders', { refresh: true });
+              router.replace({
+                pathname: '/(customer)/my-orders',
+                params: { refresh: true },
+              });
             }
             if (navState.url.includes('payment-failed')) {
               navigation.goBack(); // or show a failed screen

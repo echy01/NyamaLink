@@ -84,15 +84,6 @@ export const getButchers = asyncHandler(async (req, res) => {
   res.json({ butchers });
 });
 
-export const getMyPurchaseOrders = asyncHandler(async (req, res) => {
-  if (!req.user || !req.user._id || req.user.role !== 'agent') {
-    res.status(401);
-    throw new Error('Not authorized, user is not an agent or ID not found');
-  }
-  const orders = await Purchase.find({ buyerType: 'agent', buyerId: req.user._id }).sort({ createdAt: -1 });
-  res.json(orders);
-});
-
 export const getAvailableMeatForPurchase = asyncHandler(async (req, res) => {
   const availableMeat = await Inventory.find({ isPublic: true, ownerType: 'agent', ownerId: { $ne: req.user._id } });
   res.json(availableMeat);

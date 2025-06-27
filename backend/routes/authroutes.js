@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Signup Route
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, latitude, longitude } = req.body;
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required.' });
@@ -24,7 +24,16 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({ name, email, password: hashedPassword, role });
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      location: {
+        type: 'Point',
+        coordinates: [Number(longitude) || 0, Number(latitude) || 0], // [lng, lat]
+      },
+    });
     await user.save();
 
     res.status(201).json({ message: 'User created successfully.' });

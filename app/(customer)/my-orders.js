@@ -10,8 +10,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
-import { useNavigation } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import InfoCard from '../../components/InfoCard';
 import api from '../api';
 import COLORS from '../styles/colors';
@@ -46,8 +46,8 @@ const CustomerMyOrdersScreen = () => {
   const [myOrders, setMyOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation();
-  const route = useRoute();
+  const params = useLocalSearchParams();
+  const router = useRouter();
 
   const fetchMyOrders = useCallback(async () => {
     setRefreshing(true);
@@ -70,10 +70,10 @@ const CustomerMyOrdersScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (route.params?.refresh) {
+      if (params?.refresh) {
         fetchMyOrders();
       }
-    }, [route.params?.refresh])
+    }, [params?.refresh])
   );
 
   const handlePayNow = async (order) => {
@@ -84,8 +84,11 @@ const CustomerMyOrdersScreen = () => {
       });
 
       if (res.data && res.data.paymentUrl) {
-        navigation.navigate('payment/webview', {
-          paymentUrl: res.data.paymentUrl,
+        router.push({
+          pathname: '/payment/webview',
+          params: {
+            paymentUrl: res.data.paymentUrl,
+          },
         });
       } else {
         Alert.alert('Error', 'Unable to get payment URL.');
@@ -133,19 +136,17 @@ const CustomerMyOrdersScreen = () => {
           <FlatList
             data={myOrders}
             renderItem={({ item }) => {
-              if (!item || !item._id) {
-                console.warn("Skipping malformed order item:", item);
-                return null;
-              }
+              if (!item || !item._id) return null;
 
               const isUnpaid = item.paymentStatus?.status === 'unpaid';
+              const createdDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown';
 
               return (
                 <InfoCard
                   icon="receipt-outline"
                   title={`Order for ${String(item.meatType || 'N/A')}`}
                   value={`Quantity: ${String(item.quantity || '0')}kg | Total: KES ${String(item.totalPrice || '0')}`}
-                  subtitle={`From: ${String(item.butcheryName || 'N/A')} | Ordered: ${new Date(item.createdAt).toLocaleDateString()}`}
+                  subtitle={`From: ${String(item.butcheryName || 'N/A')} | Ordered: ${createdDate}`}
                 >
                   <OrderStatusTracker currentStatus={item.status} />
                   <PaymentStatusChip status={item.paymentStatus?.status} />

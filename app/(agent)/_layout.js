@@ -79,13 +79,6 @@ const AgentLayout = () => {
           headerTitle: 'Registered Butchers',
         }}
       />
-      <Tabs.Screen
-        name="purchases"
-        options={{
-          title: 'My Purchases',
-          headerTitle: 'My Supply Orders',
-        }}
-      />
        <Tabs.Screen
         name="profile"
         options={{

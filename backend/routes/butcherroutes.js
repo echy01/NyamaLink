@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  getNearbyButchers,
   getInventory,
   addInventoryItem,
   updateInventoryItem,
@@ -11,6 +12,8 @@ import {
   updateSlaughterhouseOrderStatus 
 } from '../controllers/butchercontroller.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { updateButcherProfile } from '../controllers/butchercontroller.js';
+
 
 const router = express.Router();
 
@@ -27,6 +30,9 @@ router.put('/customer-orders/:orderId/status', protect, updateCustomerOrderStatu
 //  Butcher's own purchase orders from slaughterhouses
 router.get('/slaughterhouse-orders', protect, getSlaughterhouseOrders);
 router.post('/order-from-slaughterhouse', protect, orderFromSlaughterhouse);
-router.put('/slaughterhouse-orders/:purchaseId/status', protect, updateSlaughterhouseOrderStatus); 
+router.put('/slaughterhouse-orders/:purchaseId/status', protect, updateSlaughterhouseOrderStatus);
+router.put('/profile', protect, updateButcherProfile);
+
+router.get('/nearby', getNearbyButchers);
 
 export default router;

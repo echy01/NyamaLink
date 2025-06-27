@@ -316,3 +316,46 @@ export const updateSlaughterhouseOrderStatus = asyncHandler(async (req, res) => 
 
   res.json(updatedPurchase);
 });
+export const updateButcherProfile = asyncHandler(async (req, res) => {
+  const { name, latitude, longitude } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user || user.role !== 'butcher') {
+    res.status(404);
+    throw new Error('Butcher not found');
+  }
+
+  if (name) user.name = name;
+  if (latitude && longitude) {
+    user.location = {
+      type: 'Point',
+      coordinates: [Number(longitude), Number(latitude)],
+    };
+  }
+
+  await user.save();
+  res.status(200).json({ message: 'Butcher profile updated successfully.' });
+});
+export const getNearbyButchers = asyncHandler(async (req, res) => {
+  const { lat, lng, radius = 5000 } = req.query;
+
+  if (!lat || !lng) {
+    res.status(400);
+    throw new Error('Latitude and longitude are required');
+  }
+
+  const nearbyButchers = await User.find({
+    role: 'butcher',
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)],
+        },
+        $maxDistance: parseInt(radius),
+      },
+    },
+  }).select('-password');
+
+  res.status(200).json({ nearbyButchers });
+});

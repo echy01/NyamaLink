@@ -29,11 +29,22 @@ const PurchaseSchema = new mongoose.Schema({
     required: true,
     refPath: 'buyerType' 
   },
-  status: {
-    type: String,
-    enum: ['pending', 'accepted', 'processing', 'ready_for_dispatch', 'dispatched', 'arrived', 'completed', 'cancelled'],
-    default: 'pending'
-  },
+status: {
+  type: String,
+  enum: [
+    'pending',
+    'accepted',
+    'processing',
+    'ready_for_pickup',
+    'dispatched',
+    'arrived',
+    'completed',
+    'cancelled',
+    'picked_up',
+    'received'
+  ],
+  default: 'pending',
+},
   meatType: { 
     type: String,
     required: true
