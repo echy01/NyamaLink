@@ -4,28 +4,31 @@ import {
   addSlaughterhouseInventory,
   getButcheryOrders,
   getButchers,
-  getMyPurchaseOrders,
   getAvailableMeatForPurchase,
-  placeMeatOrder
-} from '../controllers/agentcontroller.js'; // Import functions from the new controller
-import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
+  placeMeatOrder, // ✅ correct export name from controller
+  getMyPurchaseOrders,
+  updateButcherOrderStatus,
+} from '../controllers/agentcontroller.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// 🥩 Inventory Management for the Agent's own slaughterhouse
-router.get('/inventory', protect, getSlaughterhouseInventory); // Only agent can view their own inventory
-router.post('/inventory', protect, addSlaughterhouseInventory); // Only agent can add to their own inventory
+router.use(protect);
 
-// 🧾 Orders placed by butchers to this slaughterhouse (Agent's inbound orders)
-router.get('/orders', protect, getButcheryOrders);
+// 📦 Inventory
+router.get('/inventory', getSlaughterhouseInventory);
+router.post('/inventory', addSlaughterhouseInventory);
 
-// 👥 Get all registered butchers (for agent to view)
-router.get('/butchers', protect, getButchers);
+// 📬 Orders from butchers to agents
+router.get('/orders', getButcheryOrders);
+router.put('/orders/:id/status', updateButcherOrderStatus);
 
-// 🛒 Agent's own purchase orders (from other slaughterhouses)
-router.get('/purchase/myorders', protect, getMyPurchaseOrders);
-router.get('/purchase/available', protect, getAvailableMeatForPurchase); // Meat available from others for agent to buy
-router.post('/purchase/order', protect, placeMeatOrder); // Agent places order to another slaughterhouse
+// 📖 Butcher directory
+router.get('/butchers', getButchers);
 
+// 🛒 Slaughterhouse purchases
+router.get('/purchase/available', getAvailableMeatForPurchase);
+router.post('/purchase/order', placeMeatOrder); // ✅ corrected
+router.get('/purchase/myorders', getMyPurchaseOrders);
 
 export default router;

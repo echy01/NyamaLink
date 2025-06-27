@@ -39,6 +39,21 @@ const AgentPurchasesScreen = () => {
     fetchPurchaseOrders(); 
   }, [fetchPurchaseOrders]);
 
+  const PaymentStatusChip = ({ status }) => {
+    const backgroundColor = {
+      paid: COLORS.success,
+      unpaid: COLORS.danger,
+      pending: COLORS.warning,
+      failed: COLORS.danger,
+    }[status] || COLORS.border;
+
+    return (
+      <View style={[styles.paymentChip, { backgroundColor }]}>
+        <Text style={styles.paymentChipText}>{(status || 'unpaid').toUpperCase()}</Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={localStyles.contentContainer}>
@@ -58,7 +73,9 @@ const AgentPurchasesScreen = () => {
                   title={`Purchase of: ${String(item.meatType || 'N/A')}`}
                   value={`Quantity: ${String(item.quantity)}kg`}
                   subtitle={`Status: ${String(item.status)} | From: ${String(item.slaughterhouseName || 'N/A')}`}
-                />
+                >
+                  <PaymentStatusChip status={item.paymentStatus?.status} />
+                </InfoCard>
               );
             }}
             keyExtractor={(item) => String(item._id || item.meatId + item.createdAt)}
@@ -79,6 +96,18 @@ const localStyles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 50,
+  },
+  paymentChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  paymentChipText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
   },
 });
 

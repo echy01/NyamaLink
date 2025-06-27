@@ -17,7 +17,6 @@ import api from '../api';
 import COLORS from '../styles/colors';
 import globalStyles from '../styles/globalStyles';
 
-// Order status tracker steps
 const ORDER_STATUSES = [
   'pending',
   'accepted',
@@ -27,6 +26,21 @@ const ORDER_STATUSES = [
   'arrived',
   'completed',
 ];
+
+const PaymentStatusChip = ({ status }) => {
+  const backgroundColor = {
+    paid: COLORS.success,
+    unpaid: COLORS.danger,
+    pending: COLORS.warning,
+    failed: COLORS.danger,
+  }[status] || COLORS.border;
+
+  return (
+    <View style={[styles.paymentChip, { backgroundColor }]}>
+      <Text style={styles.paymentChipText}>{(status || 'unpaid').toUpperCase()}</Text>
+    </View>
+  );
+};
 
 const CustomerMyOrdersScreen = () => {
   const [myOrders, setMyOrders] = useState([]);
@@ -50,12 +64,10 @@ const CustomerMyOrdersScreen = () => {
     }
   }, []);
 
-  // Refresh on mount (initial load)
   useEffect(() => {
     fetchMyOrders();
   }, []);
 
-  // Refresh when returning from payment
   useFocusEffect(
     useCallback(() => {
       if (route.params?.refresh) {
@@ -133,11 +145,10 @@ const CustomerMyOrdersScreen = () => {
                   icon="receipt-outline"
                   title={`Order for ${String(item.meatType || 'N/A')}`}
                   value={`Quantity: ${String(item.quantity || '0')}kg | Total: KES ${String(item.totalPrice || '0')}`}
-                  subtitle={`From: ${String(item.butcheryName || 'N/A')} (Contact: ${String(item.butcherContact || 'N/A')}) | Ordered: ${new Date(item.createdAt).toLocaleDateString()}`}
+                  subtitle={`From: ${String(item.butcheryName || 'N/A')} | Ordered: ${new Date(item.createdAt).toLocaleDateString()}`}
                 >
                   <OrderStatusTracker currentStatus={item.status} />
-
-                  {/* Show pay now button if unpaid */}
+                  <PaymentStatusChip status={item.paymentStatus?.status} />
                   {isUnpaid && (
                     <TouchableOpacity
                       style={[globalStyles.button, { marginTop: 10 }]}
@@ -204,6 +215,18 @@ const styles = StyleSheet.create({
   },
   pending: {
     backgroundColor: COLORS.border,
+  },
+  paymentChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  paymentChipText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
   },
 });
 

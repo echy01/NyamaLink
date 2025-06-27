@@ -46,14 +46,10 @@ export const getButcheryOrders = asyncHandler(async (req, res) => {
     throw new Error('Not authorized, user is not an agent or ID not found');
   }
 
-  console.log('--- getButcheryOrders (Agent Controller) Called ---');
-  console.log('Agent User ID:', req.user._id);
-
   const agentInventoryIds = await Inventory.find({ ownerType: 'agent', ownerId: req.user._id })
                                           .select('_id'); 
 
   const inventoryIdList = agentInventoryIds.map(item => item._id);
-  console.log('Agent Inventory IDs:', inventoryIdList);
 
   const inboundButcherPurchases = await Purchase.find({
     meatId: { $in: inventoryIdList }, 
@@ -66,23 +62,22 @@ export const getButcheryOrders = asyncHandler(async (req, res) => {
   })
   .sort({ createdAt: -1 });
 
-  console.log('Raw Inbound Butcher Purchases (before formatting):', inboundButcherPurchases);
-
   const formattedOrders = inboundButcherPurchases.map(purchase => ({
     _id: purchase._id,
     butcherName: purchase.buyerId ? purchase.buyerId.name : 'Unknown Butcher', 
     meatType: purchase.meatType, 
     quantity: purchase.quantity,
     status: purchase.status,
+    pickupDetails: purchase.pickupDetails,
+    receptionConfirmation: purchase.receptionConfirmation,
+    paymentStatus: purchase.paymentStatus,
+    totalPrice: purchase.totalPrice,
     createdAt: purchase.createdAt,
     slaughterhouseName: purchase.slaughterhouseName, 
-
   }));
 
-  console.log('Formatted Inbound Butcher Purchases for Agent (sent to frontend):', formattedOrders);
   res.json(formattedOrders); 
 });
-
 
 export const getButchers = asyncHandler(async (req, res) => {
   const butchers = await User.find({ role: 'butcher' }).select('-password');
@@ -127,6 +122,8 @@ export const placeMeatOrder = asyncHandler(async (req, res) => {
     throw new Error('Requested quantity exceeds available stock.');
   }
 
+  const totalPrice = meatToPurchase.pricePerKg * quantity;
+
   const newPurchase = new Purchase({
     meatId,
     quantity,
@@ -135,9 +132,27 @@ export const placeMeatOrder = asyncHandler(async (req, res) => {
     status: 'pending',
     meatType: meatToPurchase.meatType,
     slaughterhouseName: meatToPurchase.slaughterhouseName,
+    totalPrice,
   });
 
   await newPurchase.save();
 
   res.status(201).json({ message: 'Purchase order placed successfully!', order: newPurchase });
+});
+
+export const updateButcherOrderStatus = asyncHandler(async (req, res) => {
+  const order = await Purchase.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  const { status, dispatchDetails, deliveryConfirmation } = req.body;
+
+  order.status = status;
+  if (dispatchDetails) order.pickupDetails = dispatchDetails;
+  if (deliveryConfirmation) order.receptionConfirmation = deliveryConfirmation;
+
+  const updatedOrder = await order.save();
+  res.json(updatedOrder);
 });
