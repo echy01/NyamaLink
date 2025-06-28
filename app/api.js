@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://10.71.143.101:5000/api";
+const API_BASE_URL = "http://192.168.100.46:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -48,6 +48,8 @@ const api = {
       dispatchDetails: pickupDetails,
       deliveryConfirmation: receptionConfirmation,
     }),
+    updateAgentLocation: ({ lat, lng }) =>
+  instance.put('/agent/profile/location', { lat, lng }),
 
   // 🛒 Butcher Endpoints
   getButcherInventory: () => instance.get("/butcher/inventory"),
@@ -84,11 +86,17 @@ const api = {
       dispatchDetails,
       deliveryConfirmation,
     }),
+    getNearbySlaughterhouses: (lat, lng, radius = 5000) =>
+  instance.get(`/agent/slaughterhouses/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
 
   // 🤝 Butcher places order to agent
   createAgentPurchaseOrder: ({ meatId, quantity }) =>
     instance.post("/purchase", { meatId, quantity }),
-  updateButcherProfile: (data) => instance.put('/butcher/profile', data),
+  updateButcherProfile: (data) => instance.put("/butcher/profile", data),
+  getInventoryBySlaughterhouseId: (slaughterhouseId) =>
+  instance.get(`/agent/inventory/${slaughterhouseId}`),
+  placeButcherOrder: (meatId, quantity) =>
+  instance.post('/butcher/order-from-slaughterhouse', { meatId, quantity }),
 
 
   // 👤 Customer Endpoints
@@ -102,10 +110,9 @@ const api = {
       deliveryConfirmation,
     }),
   getNearbyButchers: (lat, lng, radius = 5000) =>
-      instance.get(`/butcher/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+    instance.get(`/butcher/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
   getInventoryByButcherId: (butcherId) =>
-  instance.get(`/customer/butcher-inventory/${butcherId}`),
-
+    instance.get(`/customer/butcher-inventory/${butcherId}`),
 
   // 💳 Payment Endpoints
   initializePayment: (payload) => instance.post(`/payment/initialize`, payload),

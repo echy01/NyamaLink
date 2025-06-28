@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "565420050935",
+    "project_id": "nyamalink",
+    "storage_bucket": "nyamalink.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:565420050935:android:9598041026f1c58a0246f2",
+        "android_client_info": {
+          "package_name": "com.nyamalink.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFLsJG238lQjkkd-RNXeAk9LEfguLuKzE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

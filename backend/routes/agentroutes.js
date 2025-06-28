@@ -8,6 +8,9 @@ import {
   placeMeatOrder, 
   // getMyPurchaseOrders,
   updateButcherOrderStatus,
+  getNearbySlaughterhouses, 
+  updateAgentLocation,
+  getInventoryBySlaughterhouseId,
 } from '../controllers/agentcontroller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -18,6 +21,7 @@ router.use(protect);
 // 📦 Inventory
 router.get('/inventory', getSlaughterhouseInventory);
 router.post('/inventory', addSlaughterhouseInventory);
+router.get('/inventory/:slaughterhouseId', getInventoryBySlaughterhouseId);
 
 // 📬 Orders from butchers to agents
 router.get('/orders', getButcheryOrders);
@@ -29,5 +33,8 @@ router.get('/butchers', getButchers);
 // // 🛒 Slaughterhouse purchases
 router.get('/purchase/available', getAvailableMeatForPurchase);
 router.post('/purchase/order', placeMeatOrder);
+
+router.get('/slaughterhouses/nearby', getNearbySlaughterhouses);
+router.put('/profile/location', protect, updateAgentLocation);
 
 export default router;

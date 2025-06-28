@@ -147,3 +147,60 @@ export const updateButcherOrderStatus = asyncHandler(async (req, res) => {
   const updatedOrder = await order.save();
   res.json(updatedOrder);
 });
+export const getNearbySlaughterhouses = asyncHandler(async (req, res) => {
+  const { lat, lng, radius = 5000 } = req.query;
+
+  if (!lat || !lng) {
+    res.status(400);
+    throw new Error('Latitude and longitude are required');
+  }
+
+  const nearby = await User.find({
+    role: 'agent', 
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)],
+        },
+        $maxDistance: parseFloat(radius),
+      },
+    },
+  }).select('-password');
+
+  res.status(200).json({ nearbyAgents: nearby });
+});
+
+export const updateAgentLocation = asyncHandler(async (req, res) => {
+  const { lat, lng } = req.body;
+
+  if (!lat || !lng) {
+    res.status(400);
+    throw new Error('Latitude and longitude are required.');
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user || user.role !== 'agent') {
+    res.status(403);
+    throw new Error('Unauthorized: agent not found');
+  }
+
+  user.location = {
+    type: 'Point',
+    coordinates: [parseFloat(lng), parseFloat(lat)],
+  };
+
+  await user.save();
+  res.status(200).json({ message: 'Location updated successfully.' });
+});
+export const getInventoryBySlaughterhouseId = asyncHandler(async (req, res) => {
+  const { slaughterhouseId } = req.params;
+
+  const inventory = await Inventory.find({
+    ownerId: slaughterhouseId,
+    ownerType: 'agent',
+    isPublic: true,
+  });
+
+  res.status(200).json({ inventory });
+});

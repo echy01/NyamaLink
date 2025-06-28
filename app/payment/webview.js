@@ -15,7 +15,7 @@ const PaymentWebView = () => {
           source={{ uri: paymentUrl }}
           onNavigationStateChange={(navState) => {
             if (navState.url.includes('payment-success')) {
-              router.replace({
+              router.push({
                 pathname: '/(customer)/my-orders',
                 params: { refresh: true },
               });

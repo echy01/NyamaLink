@@ -238,6 +238,7 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Meat ID and a valid quantity are required.');
   }
+
   if (!req.user || !req.user._id || req.user.role !== 'butcher') {
     res.status(401);
     throw new Error('Not authorized, user is not a butcher or ID not found');
@@ -259,6 +260,8 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
     throw new Error(`Requested quantity (${quantity}kg) exceeds available stock (${meatToPurchase.quantity}kg).`);
   }
 
+  const totalPrice = meatToPurchase.pricePerKg * quantity;
+
   const newPurchase = new Purchase({
     meatId,
     quantity,
@@ -267,10 +270,11 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
     status: 'pending',
     meatType: meatToPurchase.meatType,
     slaughterhouseName: meatToPurchase.slaughterhouseName,
+    pricePerKgAtOrder: meatToPurchase.pricePerKg,
+    totalPrice: totalPrice,
   });
 
   await newPurchase.save();
-
 
   res.status(201).json({ message: 'Purchase order to slaughterhouse placed successfully!', order: newPurchase });
 });

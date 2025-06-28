@@ -1,21 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
-  RefreshControl,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
   Modal,
   TextInput,
-  Alert,
+  TouchableOpacity,
+  RefreshControl,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import globalStyles from '../styles/globalStyles';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../api';
 import COLORS from '../styles/colors';
+import globalStyles from '../styles/globalStyles';
 
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
@@ -24,60 +25,72 @@ import pork from '../../assets/images/pork.png';
 import lamb from '../../assets/images/lamb.png';
 import meatDefault from '../../assets/images/meat_default.jpeg';
 
-const meatImages = { beef, goat, chicken, pork, lamb, default: meatDefault };
-
-const getMeatImage = (meatType) => {
-  const key = (meatType || '').toLowerCase();
-  return meatImages[key] || meatImages.default;
+const meatImages = {
+  beef,
+  goat,
+  chicken,
+  pork,
+  lamb,
+  default: meatDefault,
 };
 
 const PurchaseFromAgentsScreen = () => {
-  const [inventory, setInventory] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const slaughterhouseId = params.slaughterhouseId;
 
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [orderQuantity, setOrderQuantity] = useState('');
+
+  const getMeatImage = (type) => meatImages[type?.toLowerCase()] || meatImages.default;
 
   const fetchInventory = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const res = await api.getAvailableMeatForPurchase();
-      setInventory(Array.isArray(res.data) ? res.data : []);
+      let res;
+      if (slaughterhouseId) {
+        res = await api.getInventoryBySlaughterhouseId(slaughterhouseId);
+      } else {
+        res = await api.getAvailableMeatForPurchase();
+      }
+      const data = res.data?.availableMeat || res.data?.inventory || res.data;
+      setInventory(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('❌ Load Error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Failed to load available meat from agents.');
+      console.error('❌ Purchase Inventory Load Error:', err.message);
+      Alert.alert('Error', 'Failed to load inventory.');
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
-  }, []);
+  }, [slaughterhouseId]);
 
   const handleOrder = async () => {
-    if (!selectedItem || !orderQuantity) {
-      return Alert.alert('Missing Info', 'Please enter a quantity.');
-    }
+    if (!selectedItem || !orderQuantity) return;
 
     const quantity = parseFloat(orderQuantity);
     if (isNaN(quantity) || quantity <= 0) {
-      return Alert.alert('Invalid Quantity', 'Please enter a valid positive number.');
+      Alert.alert('Invalid Quantity', 'Please enter a valid quantity.');
+      return;
     }
-
     if (quantity > selectedItem.quantity) {
-      return Alert.alert('Too Much', `Requested quantity exceeds available stock (${selectedItem.quantity}kg).`);
+      Alert.alert('Out of Stock', `Only ${selectedItem.quantity}kg available.`);
+      return;
     }
 
-    setShowOrderModal(false);
     try {
-      await api.createAgentPurchaseOrder({ meatId: selectedItem._id, quantity });
-      Alert.alert('Success', `Ordered ${quantity}kg of ${selectedItem.meatType}`);
+      await api.placeButcherOrder(selectedItem._id, quantity);
+      Alert.alert('Success', 'Order placed successfully.');
+      setShowOrderModal(false);
       setOrderQuantity('');
       fetchInventory();
     } catch (err) {
-      console.error('Order Error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Could not place order. Try again.');
+      console.error('❌ Order Error:', err.message);
+      Alert.alert('Error', 'Could not place order.');
     }
   };
 
@@ -88,6 +101,15 @@ const PurchaseFromAgentsScreen = () => {
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={styles.contentContainer}>
+        {!slaughterhouseId && (
+          <TouchableOpacity
+            style={[globalStyles.button, { marginHorizontal: 16, marginBottom: 10 }]}
+            onPress={() => router.push('/(modals)/nearby-slaughterhouses')}
+          >
+            <Text style={globalStyles.buttonText}>Find Slaughterhouses Near Me</Text>
+          </TouchableOpacity>
+        )}
+
         {loading && !refreshing ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={styles.loadingIndicator} />
         ) : (
@@ -127,18 +149,16 @@ const PurchaseFromAgentsScreen = () => {
         )}
       </View>
 
-      {/* Order Modal */}
-      <Modal visible={showOrderModal} transparent animationType="fade" onRequestClose={() => setShowOrderModal(false)}>
+      <Modal visible={showOrderModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Order {selectedItem?.meatType || 'Meat'}</Text>
-            <Text style={globalStyles.label}>Available: {selectedItem?.quantity} kg</Text>
-            <Text style={globalStyles.label}>Price: KES {selectedItem?.pricePerKg} /kg</Text>
+            <Text style={styles.modalTitle}>Order {selectedItem?.meatType}</Text>
+            <Text style={globalStyles.label}>Available: {selectedItem?.quantity}kg</Text>
+            <Text style={globalStyles.label}>Price: KES {selectedItem?.pricePerKg}/kg</Text>
 
             <TextInput
               style={globalStyles.input}
-              placeholder="Enter Quantity (kg)"
-              placeholderTextColor={COLORS.textLight}
+              placeholder="Enter quantity (kg)"
               keyboardType="numeric"
               value={orderQuantity}
               onChangeText={setOrderQuantity}
@@ -146,12 +166,15 @@ const PurchaseFromAgentsScreen = () => {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[globalStyles.buttonOutline, styles.halfWidthButton]}
+                style={[globalStyles.buttonOutline, styles.halfButton]}
                 onPress={() => setShowOrderModal(false)}
               >
                 <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, styles.halfWidthButton]} onPress={handleOrder}>
+              <TouchableOpacity
+                style={[globalStyles.button, styles.halfButton]}
+                onPress={handleOrder}
+              >
                 <Text style={globalStyles.buttonText}>Place Order</Text>
               </TouchableOpacity>
             </View>
@@ -171,50 +194,48 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: COLORS.card,
     padding: 12,
     marginHorizontal: 16,
     marginBottom: 12,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   image: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
-    marginHorizontal: 12,
   },
   title: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 4,
     color: COLORS.textDark,
   },
   detail: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textLight,
   },
   orderButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
+    borderRadius: 8,
   },
   orderButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -228,20 +249,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '90%',
     maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.textDark,
-    textAlign: 'center',
     marginBottom: 15,
+    textAlign: 'center',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
   },
-  halfWidthButton: {
+  halfButton: {
     width: '48%',
   },
 });
