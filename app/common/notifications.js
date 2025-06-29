@@ -1,33 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles';
-import COLORS from '../styles/colors';
-import api from '../api'; 
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import api from "../api";
+import COLORS from "../styles/colors";
+import globalStyles from "../styles/globalStyles";
+import socket from "../../utils/socket"; // ✅ Add your socket setup here
 
 const NotificationItem = ({ notification }) => {
   const getIconAndColor = (type) => {
     switch (type) {
-      case 'order_status_update':
-        return { icon: 'cube-outline', color: COLORS.accent };
-      case 'purchase_status_update':
-        return { icon: 'briefcase-outline', color: COLORS.info };
-      case 'payment_received':
-        return { icon: 'wallet-outline', color: COLORS.success };
-      case 'new_message':
-        return { icon: 'chatbox-outline', color: COLORS.warning };
-      case 'info':
+      case "order_status_update":
+        return { icon: "cube-outline", color: COLORS.accent };
+      case "purchase_status_update":
+        return { icon: "briefcase-outline", color: COLORS.info };
+      case "payment_received":
+        return { icon: "wallet-outline", color: COLORS.success };
+      case "new_message":
+        return { icon: "chatbox-outline", color: COLORS.warning };
+      case "info":
       default:
-        return { icon: 'information-circle-outline', color: COLORS.darkGrey };
+        return { icon: "information-circle-outline", color: COLORS.darkGrey };
     }
   };
 
@@ -38,17 +39,28 @@ const NotificationItem = ({ notification }) => {
       style={[
         globalStyles.card,
         localStyles.notificationCard,
-        notification.read ? localStyles.readNotification : localStyles.unreadNotification,
+        notification.read
+          ? localStyles.readNotification
+          : localStyles.unreadNotification,
       ]}
-      onPress={() => console.log('Notification pressed:', notification.id)}
+      onPress={() => console.log("Notification pressed:", notification.id)}
     >
       <View style={localStyles.notificationContent}>
-        <View style={[globalStyles.notificationIconContainer, { backgroundColor: color + '20' }]}>
+        <View
+          style={[
+            globalStyles.notificationIconContainer,
+            { backgroundColor: color + "20" },
+          ]}
+        >
           <Ionicons name={icon} size={24} color={color} />
         </View>
         <View style={localStyles.textContainer}>
-          <Text style={localStyles.notificationTitle}>{notification.title}</Text>
-          <Text style={localStyles.notificationMessage}>{notification.message}</Text>
+          <Text style={localStyles.notificationTitle}>
+            {notification.title}
+          </Text>
+          <Text style={localStyles.notificationMessage}>
+            {notification.message}
+          </Text>
           <Text style={localStyles.notificationTimestamp}>
             {new Date(notification.timestamp).toLocaleString()}
           </Text>
@@ -67,12 +79,10 @@ const NotificationScreen = () => {
   const fetchNotifications = useCallback(async () => {
     setRefreshing(true);
     try {
-
       const response = await api.getNotifications();
       setNotifications(response.data);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-  
+      console.error("Failed to fetch notifications:", error);
     } finally {
       setRefreshing(false);
       setLoading(false);
@@ -83,22 +93,49 @@ const NotificationScreen = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // ✅ Listen for real-time notifications via socket.io
+  useEffect(() => {
+    const handler = (data) => {
+      console.log("📡 New notification received via socket:", data);
+      setNotifications((prev) => [data, ...prev]);
+    };
+
+    socket.on("new_notification", handler);
+    return () => socket.off("new_notification", handler);
+  }, []);
+
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={globalStyles.contentContainer}>
         <Text style={globalStyles.title}>Notifications</Text>
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={globalStyles.loadingIndicator} />
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={globalStyles.loadingIndicator}
+          />
         ) : (
           <FlatList
             data={notifications}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={(item, index) => String(item.id || index)}
             renderItem={({ item }) => <NotificationItem notification={item} />}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchNotifications} />}
-            ListEmptyComponent={
-              <Text style={globalStyles.emptyStateText}>No new notifications.</Text>
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={fetchNotifications}
+              />
             }
-            contentContainerStyle={notifications.length === 0 && { flexGrow: 1, justifyContent: 'center' }}
+            ListEmptyComponent={
+              <Text style={globalStyles.emptyStateText}>
+                No new notifications.
+              </Text>
+            }
+            contentContainerStyle={
+              notifications.length === 0 && {
+                flexGrow: 1,
+                justifyContent: "center",
+              }
+            }
           />
         )}
       </View>
@@ -108,26 +145,26 @@ const NotificationScreen = () => {
 
 const localStyles = StyleSheet.create({
   notificationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGrey,
-    marginBottom: 0, 
-    borderRadius: 0, 
-    shadowOpacity: 0, 
-    elevation: 0, 
+    marginBottom: 0,
+    borderRadius: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   unreadNotification: {
     backgroundColor: COLORS.white,
   },
   readNotification: {
-    backgroundColor: COLORS.background, 
+    backgroundColor: COLORS.background,
   },
   notificationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   textContainer: {
@@ -135,7 +172,7 @@ const localStyles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.textDark,
     marginBottom: 4,
   },

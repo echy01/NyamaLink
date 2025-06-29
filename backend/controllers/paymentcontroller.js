@@ -60,7 +60,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
       metadata: {
         orderId: orderOrPurchase._id.toString(),
       },
-      redirect_url: 'https://a5d6-41-90-69-155.ngrok-free.app/payment-success',
+      redirect_url: 'https://2f69-41-90-69-155.ngrok-free.app/payment-success',
     },
     {
       headers: getPaystackHeaders(),

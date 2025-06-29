@@ -18,7 +18,7 @@ instance.interceptors.request.use(async (config) => {
 const api = {
   // 🔐 Auth Endpoints
   login: (credentials) => instance.post("/auth/login", credentials),
-  signup: (data) => instance.post("/auth/signup", data),
+  signup: (data) => instance.post("/auth/register", data),
   getProfile: () => instance.get("/auth/profile"),
 
   // 🏭 Agent (Slaughterhouse) Endpoints

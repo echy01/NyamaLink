@@ -191,6 +191,16 @@ export const updateCustomerOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found or unauthorized');
   }
 
+  // ✅ Emit Socket.IO Notification
+  const io = req.app.get('io');
+  io.emit('new_notification', {
+    title: '📦 Order Status Update',
+    message: `Order for ${updatedOrder.meatType} is now '${updatedOrder.status}'`,
+    timestamp: new Date(),
+    type: 'order_status_update',
+    read: false,
+  });
+
   res.json(updatedOrder);
 });
 
@@ -276,6 +286,16 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
 
   await newPurchase.save();
 
+  // ✅ Emit Socket.IO Notification
+  const io = req.app.get('io');
+  io.emit('new_notification', {
+    title: '🔁 New Slaughterhouse Order',
+    message: `${req.user.name || 'A butcher'} placed an order for ${quantity}kg of ${meatToPurchase.meatType}`,
+    timestamp: new Date(),
+    type: 'purchase_status_update',
+    read: false,
+  });
+
   res.status(201).json({ message: 'Purchase order to slaughterhouse placed successfully!', order: newPurchase });
 });
 
@@ -318,8 +338,20 @@ export const updateSlaughterhouseOrderStatus = asyncHandler(async (req, res) => 
     throw new Error('Purchase order not found or unauthorized');
   }
 
+
+  // ✅ Emit Socket.IO Notification
+  const io = req.app.get('io');
+  io.emit('new_notification', {
+    title: '🚚 Slaughterhouse Dispatch',
+    message: `Purchase order for ${updatedPurchase.meatType} is now '${updatedPurchase.status}'`,
+    timestamp: new Date(),
+    type: 'purchase_status_update',
+    read: false,
+  });
+
   res.json(updatedPurchase);
 });
+
 export const updateButcherProfile = asyncHandler(async (req, res) => {
   const { name, latitude, longitude } = req.body;
 
@@ -340,6 +372,7 @@ export const updateButcherProfile = asyncHandler(async (req, res) => {
   await user.save();
   res.status(200).json({ message: 'Butcher profile updated successfully.' });
 });
+
 export const getNearbyButchers = asyncHandler(async (req, res) => {
   const { lat, lng, radius = 5000 } = req.query;
 

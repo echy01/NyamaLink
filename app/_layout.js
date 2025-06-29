@@ -1,9 +1,17 @@
-import React from 'react';
-import { Stack } from 'expo-router';
-import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, View, Text, StyleSheet, StatusBar } from 'react-native';
-import COLORS from './styles/colors';
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import socket from "../utils/socket";
+import {
+  ActivityIndicator,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import COLORS from "./styles/colors";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,11 +22,32 @@ const RootLayout = () => {
     // 'Poppins_600SemiBold': require('../assets/fonts/Poppins-SemiBold.ttf'),
   });
 
-  React.useEffect(() => {
+  // 🟢 Handle splash screen
+  useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  // 🟢 Join Socket.IO room based on user ID
+  useEffect(() => {
+    const joinUserRoom = async () => {
+      try {
+        const userData = await AsyncStorage.getItem("user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user?._id) {
+            socket.emit("join_room", user._id);
+            console.log("🔗 Joined room:", user._id);
+          }
+        }
+      } catch (err) {
+        console.error("🔴 Failed to join socket room:", err);
+      }
+    };
+
+    joinUserRoom();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return (
@@ -44,8 +73,8 @@ const RootLayout = () => {
 const localStyles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.bg,
   },
   loadingText: {

@@ -5,19 +5,21 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
-  ScrollView, 
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; 
-import InfoCard from '../../components/InfoCard';    
-import api from '../api';                         
-import COLORS from '../styles/colors';            
-import { useLocalSearchParams } from 'expo-router'; 
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const ButcherHomeScreen = () => {
   const params = useLocalSearchParams();
-  const userName = params.name || 'Butcher User'; 
+  const userName = params.name || 'Butcher User';
+  const router = useRouter();
 
   const [inventorySummary, setInventorySummary] = useState({ totalStock: 0, distinctItems: 0 });
   const [ordersSummary, setOrdersSummary] = useState({ pendingOrders: 0, totalOrders: 0 });
@@ -34,7 +36,7 @@ const ButcherHomeScreen = () => {
       const currentInventory = Array.isArray(invRes.data?.inventory) ? invRes.data.inventory : [];
       const totalStock = currentInventory.reduce((sum, item) => sum + Number(item.stock || 0), 0);
       setInventorySummary({
-        totalStock: totalStock.toFixed(2), 
+        totalStock: totalStock.toFixed(2),
         distinctItems: currentInventory.length,
       });
 
@@ -62,7 +64,7 @@ const ButcherHomeScreen = () => {
   }, []);
 
   useEffect(() => {
-    fetchButcherSummaries(); 
+    fetchButcherSummaries();
   }, [fetchButcherSummaries]);
 
   return (
@@ -105,7 +107,14 @@ const ButcherHomeScreen = () => {
               subtitle="Providing fresh cuts to the community!"
             />
 
-            {/* You can add more summary cards or quick action buttons here */}
+            {/* 🔔 Notification Button */}
+            <TouchableOpacity
+              style={localStyles.notifyButton}
+              onPress={() => router.push('/notification')}
+            >
+              <Ionicons name="notifications-outline" size={20} color="white" />
+              <Text style={localStyles.notifyText}>Go to Notifications</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -115,12 +124,12 @@ const ButcherHomeScreen = () => {
 
 const localStyles = StyleSheet.create({
   scrollContent: {
-    flexGrow: 1, 
-    paddingHorizontal: 0, 
+    flexGrow: 1,
+    paddingHorizontal: 0,
     paddingTop: 10,
   },
   overviewContainer: {
-    paddingHorizontal: 16, 
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     fontSize: 20,
@@ -132,6 +141,20 @@ const localStyles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 50,
+  },
+  notifyButton: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.primary,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  notifyText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
 

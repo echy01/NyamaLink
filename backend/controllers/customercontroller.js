@@ -80,9 +80,17 @@ const placeOrder = asyncHandler(async (req, res) => {
   });
 
   await newOrder.save();
-
   meatToOrder.quantity -= quantity;
   await meatToOrder.save();
+
+  const io = req.app.get('io');
+  io.emit('new_notification', {
+    title: '🛒 New Customer Order',
+    message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meatToOrder.meatType}`,
+    timestamp: new Date(),
+    type: 'order_status_update',
+    read: false,
+  });
 
   res.status(201).json({
     message: 'Order placed successfully!',
@@ -123,8 +131,9 @@ const getMyOrders = asyncHandler(async (req, res) => {
     createdAt: order.createdAt,
   }));
 
-  res.json({ orders: formattedOrders }); // ✅ Corrected to return with named key
+  res.json({ orders: formattedOrders }); 
 });
+
 const getInventoryByButcherId = asyncHandler(async (req, res) => {
   const butcherId = req.params.butcherId;
 
