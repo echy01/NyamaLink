@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert, // Keeping Alert for quick feedback
+  Alert,
   Dimensions,
   ScrollView,
   StyleSheet,
@@ -12,11 +12,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator, // Added for loading state
+  ActivityIndicator,
 } from "react-native";
 
-import COLORS from './styles/colors'; // Import your COLORS file
-import api from './api'; // Import your API utility
+import COLORS from './styles/colors';
+import api from './api';
 
 const { width } = Dimensions.get("window");
 
@@ -26,14 +26,15 @@ export default function SignUpScreen() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!name || !email || !password || !confirmPassword || !role) {
-      Alert.alert("Error", "Please fill in all fields and select a role.");
+    if (!name || !email || !phoneNumber || !password || !confirmPassword || !role) {
+      Alert.alert("Error", "Please fill in all fields including phone number.");
       return;
     }
 
@@ -42,29 +43,32 @@ export default function SignUpScreen() {
       return;
     }
 
-    setLoading(true); // Show loading indicator
+    setLoading(true);
     try {
-      // Use the API utility for signup
-      const response = await api.signup({ name, email, password, role });
-      
-      const { token, user } = response.data; // Assuming API returns token and user object with role and name
+      const response = await api.signup({
+        name,
+        email,
+        phoneNumber,
+        password,
+        role,
+      });
 
-      await Alert.alert("Success", "Account created successfully! Please log in.");
-      // After successful signup and showing alert, navigate to login screen
-      router.replace('/loginscreen'); 
-
+      if (response.status === 201 || response.status === 200) {
+        Alert.alert('Success', 'Account created successfully! Please log in.');
+        router.replace('/loginscreen');
+      }
     } catch (error) {
-      console.error("Sign Up error:", error.response?.data || error.message);
-      Alert.alert("Sign Up Failed", error.response?.data?.message || "Failed to create account. Please try again.");
+      console.error("Signup Error:", error.response?.data || error.message);
+      Alert.alert("Signup Failed", error.response?.data?.message || "Try again.");
     } finally {
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
 
   return (
     <View style={localStyles.safeArea}>
       <LinearGradient
-        colors={[COLORS.primary, COLORS.danger, '#8B0000']} // Consistent gradient with login
+        colors={[COLORS.primary, COLORS.danger, '#8B0000']}
         style={localStyles.gradientContainer}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -97,6 +101,14 @@ export default function SignUpScreen() {
             />
             <TextInput
               style={localStyles.input}
+              placeholder="Phone Number"
+              placeholderTextColor={COLORS.textLight}
+              keyboardType="phone-pad"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+            />
+            <TextInput
+              style={localStyles.input}
               placeholder="Password"
               placeholderTextColor={COLORS.textLight}
               secureTextEntry
@@ -119,7 +131,7 @@ export default function SignUpScreen() {
                   key={r}
                   style={[localStyles.roleButton, role === r && localStyles.selectedRole]}
                   onPress={() => setRole(r)}
-                  disabled={loading} // Disable role selection while loading
+                  disabled={loading}
                 >
                   <Text style={[localStyles.roleText, role === r && localStyles.selectedRoleText]}>
                     {r.charAt(0).toUpperCase() + r.slice(1)}
@@ -128,8 +140,8 @@ export default function SignUpScreen() {
               ))}
             </View>
 
-            <TouchableOpacity 
-              style={[localStyles.signupButton, loading && {opacity: 0.7}]}
+            <TouchableOpacity
+              style={[localStyles.signupButton, loading && { opacity: 0.7 }]}
               onPress={handleSignUp}
               disabled={loading}
             >

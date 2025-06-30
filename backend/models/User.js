@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  phoneNumber: { 
+    type: String, 
+    unique: true, 
+    required: true 
+  }, 
   role: {
     type: String,
     enum: ['customer', 'butcher', 'agent'],
@@ -30,6 +35,8 @@ const userSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
+        resetCode: String,
+      resetCodeExpires: Date,
 });
 
 userSchema.index({ location: '2dsphere' });

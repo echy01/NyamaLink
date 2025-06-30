@@ -226,6 +226,8 @@ export const getSlaughterhouseOrders = asyncHandler(async (req, res) => {
     meatId: order.meatId?._id,
     meatType: order.meatId?.meatType || order.meatType,
     quantity: order.quantity,
+    pricePerKgAtOrder: order.pricePerKgAtOrder,
+    totalPrice: order.totalPrice,
     buyerType: order.buyerType,
     buyerId: order.buyerId,
     status: order.status,

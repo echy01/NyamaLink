@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.100.46:5000/api";
+const API_BASE_URL = "http://192.168.1.3:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -18,8 +18,20 @@ instance.interceptors.request.use(async (config) => {
 const api = {
   // 🔐 Auth Endpoints
   login: (credentials) => instance.post("/auth/login", credentials),
-  signup: (data) => instance.post("/auth/register", data),
+  signup: (data) => instance.post("/auth/signup", data),
   getProfile: () => instance.get("/auth/profile"),
+
+  // Forgot password (request reset token)
+  requestReset: ({ email }) => instance.post("/auth/requestreset", { email }),
+
+  // Reset password with token
+  resetPassword: ({ email, code, newPassword }) =>
+    instance.post("/auth/resetpassword", { email, code, newPassword }),
+
+  // 🔑 OTP
+  sendOtp: ({ phoneNumber }) => instance.post("/otp/send", { phoneNumber }),
+  verifyOtp: ({ phoneNumber, code }) =>
+    instance.post("/otp/verify", { phoneNumber, code }),
 
   // 🏭 Agent (Slaughterhouse) Endpoints
   getSlaughterhouseInventory: () => instance.get("/agent/inventory"),
@@ -48,8 +60,8 @@ const api = {
       dispatchDetails: pickupDetails,
       deliveryConfirmation: receptionConfirmation,
     }),
-    updateAgentLocation: ({ lat, lng }) =>
-  instance.put('/agent/profile/location', { lat, lng }),
+  updateAgentLocation: ({ lat, lng }) =>
+    instance.put("/agent/profile/location", { lat, lng }),
 
   // 🛒 Butcher Endpoints
   getButcherInventory: () => instance.get("/butcher/inventory"),
@@ -86,18 +98,19 @@ const api = {
       dispatchDetails,
       deliveryConfirmation,
     }),
-    getNearbySlaughterhouses: (lat, lng, radius = 5000) =>
-  instance.get(`/agent/slaughterhouses/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+  getNearbySlaughterhouses: (lat, lng, radius = 5000) =>
+    instance.get(
+      `/agent/slaughterhouses/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+    ),
 
   // 🤝 Butcher places order to agent
   createAgentPurchaseOrder: ({ meatId, quantity }) =>
     instance.post("/purchase", { meatId, quantity }),
   updateButcherProfile: (data) => instance.put("/butcher/profile", data),
   getInventoryBySlaughterhouseId: (slaughterhouseId) =>
-  instance.get(`/agent/inventory/${slaughterhouseId}`),
+    instance.get(`/agent/inventory/${slaughterhouseId}`),
   placeButcherOrder: (meatId, quantity) =>
-  instance.post('/butcher/order-from-slaughterhouse', { meatId, quantity }),
-
+    instance.post("/butcher/order-from-slaughterhouse", { meatId, quantity }),
 
   // 👤 Customer Endpoints
   getAvailableMeatForCustomers: () => instance.get("/customer/available-meat"),

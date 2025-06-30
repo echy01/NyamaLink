@@ -8,7 +8,8 @@ import butcherroutes from './routes/butcherroutes.js';
 import customerroutes from './routes/customerroutes.js'; 
 import paymentRoutes from './routes/paymentroutes.js'; 
 import purchaseroutes from './routes/purchaseroutes.js'; 
-import notificationRoutes from './routes/notificationRoutes.js'; 
+import notificationRoutes from './routes/notificationRoutes.js';
+import otpRoutes from './routes/otproutes.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use('/api/customer', customerroutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/purchase', purchaseroutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/otp', otpRoutes);
 
 // Logger middleware
 app.use((req, res, next) => {

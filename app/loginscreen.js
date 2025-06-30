@@ -89,6 +89,12 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
             />
+            <TouchableOpacity onPress={() => router.push('/forgotpassword')}>
+              <Text style={{ color: COLORS.secondary, textAlign: 'right', marginBottom: 12 }}>
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+
 
             <TouchableOpacity 
               style={[localStyles.loginButton, loading && {opacity: 0.7}]} // Dim button when loading
