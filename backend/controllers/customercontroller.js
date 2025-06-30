@@ -153,3 +153,22 @@ export {
   getMyOrders,
   getInventoryByButcherId,
 };
+
+export const updateCustomerLocation = asyncHandler(async (req, res) => {
+  const { lat, lng } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user || user.role !== 'customer') {
+    res.status(401);
+    throw new Error('Not authorized as customer');
+  }
+
+  user.location = {
+    type: 'Point',
+    coordinates: [parseFloat(lng), parseFloat(lat)],
+  };
+
+  await user.save();
+  res.status(200).json({ message: 'Location updated successfully.' });
+});
+

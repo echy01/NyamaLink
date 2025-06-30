@@ -7,13 +7,14 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
+  Alert, // Added Alert for error handling, as used in fetchButcherSummaries
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles';
-import InfoCard from '../../components/InfoCard';
-import api from '../api';
-import COLORS from '../styles/colors';
+import globalStyles from '../styles/globalStyles'; // Assuming this contains basic container/text styles
+import InfoCard from '../../components/InfoCard'; // Assuming this is a custom component
+import api from '../api'; // Assuming this handles API calls
+import COLORS from '../styles/colors'; // Your defined color palette
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const ButcherHomeScreen = () => {
@@ -69,6 +70,11 @@ const ButcherHomeScreen = () => {
 
   return (
     <SafeAreaView style={globalStyles.container}>
+      {/* Top Header Bar for "Butcher Overview" */}
+      <View style={localStyles.appHeader}>
+        <Text style={localStyles.appTitle}>Butcher Overview</Text>
+      </View>
+
       <ScrollView
         contentContainerStyle={localStyles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchButcherSummaries} />}
@@ -77,13 +83,25 @@ const ButcherHomeScreen = () => {
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (
           <View style={localStyles.overviewContainer}>
-            <Text style={localStyles.sectionHeader}>Quick Overview for {userName}</Text>
+            {/* Main Section Header with Notification Icon */}
+            <View style={localStyles.sectionHeaderContainer}>
+              <Text style={localStyles.greetingText}>Quick Overview for {userName}</Text>
+              <TouchableOpacity onPress={() => router.push('/notification')} style={localStyles.notificationIconWrapper}>
+                <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
+                {/* Optional: Add a badge for unread notifications */}
+                {/* <View style={localStyles.notificationBadge} /> */}
+              </TouchableOpacity>
+            </View>
 
+            {/* Info Cards */}
             <InfoCard
               icon="cube-outline"
               title="Total Inventory Stock"
               value={`${String(inventorySummary.totalStock)} kg`}
               subtitle={`Across ${String(inventorySummary.distinctItems)} unique meat types`}
+              // Example of adding custom styles if InfoCard supports it
+              // cardStyle={localStyles.infoCardStyle}
+              // valueStyle={localStyles.infoCardValue}
             />
 
             <InfoCard
@@ -106,15 +124,6 @@ const ButcherHomeScreen = () => {
               value={String(userName)}
               subtitle="Providing fresh cuts to the community!"
             />
-
-            {/* 🔔 Notification Button */}
-            <TouchableOpacity
-              style={localStyles.notifyButton}
-              onPress={() => router.push('/notification')}
-            >
-              <Ionicons name="notifications-outline" size={20} color="white" />
-              <Text style={localStyles.notifyText}>Go to Notifications</Text>
-            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -123,39 +132,82 @@ const ButcherHomeScreen = () => {
 };
 
 const localStyles = StyleSheet.create({
+  // Adjusted scroll content to allow full horizontal padding from overviewContainer
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 0,
-    paddingTop: 10,
+    paddingTop: 0, // No top padding here as appHeader takes care of it
   },
+  // Main container for all content below the fixed header
   overviewContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20, // Increased horizontal padding for a cleaner look
+    paddingVertical: 15, // Add some vertical padding at the top of the scrollable content
   },
-  sectionHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  // New style for the fixed top header (Butcher Overview text)
+  appHeader: {
+    height: 60, // Fixed height for the header
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGrey,
+    backgroundColor: COLORS.white, // Or a very light background color
+    paddingHorizontal: 20,
+    paddingTop: 10, // Adjust for SafeAreaView if needed
+  },
+  appTitle: {
+    fontSize: 22,
+    fontWeight: '600', // Slightly less bold than 'bold' for a refined look
     color: COLORS.textDark,
-    marginBottom: 15,
-    marginTop: 10,
-    textAlign: 'center',
+  },
+  // Container for "Quick Overview..." text and Notification Icon
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20, // Increased space below the header
+    marginTop: 15, // Space above the header within the scroll view
+  },
+  greetingText: {
+    fontSize: 18, // Slightly smaller than before, more like a subtitle
+    fontWeight: '500', // Medium weight
+    color: COLORS.textLight, // Softer color for the greeting
+    flexShrink: 1, // Allows text to shrink if icon is too close
+    marginRight: 10, // Space between text and icon
+  },
+  notificationIconWrapper: {
+    padding: 8, // Make the touchable area slightly larger
+    borderRadius: 20, // A subtle rounded background for the icon
+    backgroundColor: COLORS.background, // A very light background to highlight the icon
+  },
+  // Optional: For unread notification badge
+  notificationBadge: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    backgroundColor: COLORS.danger, // Red dot
+    borderRadius: 5,
+    width: 10,
+    height: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
   },
   loadingIndicator: {
     marginTop: 50,
   },
-  notifyButton: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  notifyText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
+  // Example styles for InfoCard if you want to override its internal look
+  // infoCardStyle: {
+  //   borderRadius: 12, // More rounded corners
+  //   shadowColor: COLORS.darkGrey,
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.1,
+  //   shadowRadius: 8,
+  //   elevation: 5,
+  //   marginBottom: 15, // Increased spacing between cards
+  // },
+  // infoCardValue: {
+  //   fontSize: 24, // Larger value text
+  //   fontWeight: 'bold',
+  //   color: COLORS.primary,
+  // },
 });
 
 export default ButcherHomeScreen;

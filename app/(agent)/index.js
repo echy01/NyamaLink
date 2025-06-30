@@ -9,21 +9,19 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; 
-import InfoCard from '../../components/InfoCard';     
-import api from '../api';                         
-import COLORS from '../styles/colors';             
-import { useLocalSearchParams } from 'expo-router'; 
+import { Ionicons } from '@expo/vector-icons'; 
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
+import { useLocalSearchParams } from 'expo-router';
 
 const AgentHomeScreen = () => {
   const params = useLocalSearchParams();
-  const userName = params.name || 'Slaughterhouse Agent'; 
+  const userName = params.name || 'Slaughterhouse Agent';
 
   const [inventorySummary, setInventorySummary] = useState({ totalStock: 0, distinctItems: 0 });
   const [ordersSummary, setOrdersSummary] = useState({ pendingOrders: 0, totalOrders: 0 });
-  const [butchersSummary, setButchersSummary] = useState({ totalButchers: 0 });
-  const [purchaseSummary, setPurchaseSummary] = useState({ pendingPurchases: 0, totalPurchases: 0 });
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,19 +45,6 @@ const AgentHomeScreen = () => {
         totalOrders: currentOrders.length,
       });
 
-      const butchersRes = await api.getButchers();
-      const currentButchers = Array.isArray(butchersRes.data?.butchers) ? butchersRes.data.butchers : [];
-      setButchersSummary({
-        totalButchers: currentButchers.length,
-      });
-
-      // const purchaseOrdersRes = await api.getMyPurchaseOrders();
-      // const currentPurchases = Array.isArray(purchaseOrdersRes.data) ? purchaseOrdersRes.data : [];
-      // setPurchaseSummary({
-      //   pendingPurchases: currentPurchases.filter(purchase => purchase.status === 'pending').length,
-      //   totalPurchases: currentPurchases.length,
-      // });
-
     } catch (err) {
       console.error('❌ Agent Home Load Error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load dashboard summaries. Please try again.');
@@ -75,6 +60,11 @@ const AgentHomeScreen = () => {
 
   return (
     <SafeAreaView style={globalStyles.container}>
+      {/* Top Header Bar for "Agent Overview" */}
+      <View style={localStyles.appHeader}>
+        <Text style={localStyles.appTitle}>Agent Overview</Text>
+      </View>
+
       <ScrollView
         contentContainerStyle={localStyles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAgentSummaries} />}
@@ -83,7 +73,11 @@ const AgentHomeScreen = () => {
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (
           <View style={localStyles.overviewContainer}>
-            <Text style={localStyles.sectionHeader}>Quick Overview for {String(userName)}</Text>
+            {/* Main Section Header */}
+            <View style={localStyles.sectionHeaderContainer}>
+              <Text style={localStyles.greetingText}>Quick Overview for {String(userName)}</Text>
+              {/* No notification icon here as per original AgentHomeScreen */}
+            </View>
 
             <InfoCard
               icon="cube-outline"
@@ -98,21 +92,6 @@ const AgentHomeScreen = () => {
               value={`${String(ordersSummary.pendingOrders)} Pending`}
               subtitle={`Total: ${String(ordersSummary.totalOrders)} orders`}
             />
-
-            <InfoCard
-              icon="people-outline"
-              title="Registered Butchers"
-              value={`${String(butchersSummary.totalButchers)} Butchers`}
-              subtitle="View all registered butcher profiles"
-            />
-
-            {/* <InfoCard
-              icon="swap-horizontal-outline"
-              title="My Supply Orders"
-              value={`${String(purchaseSummary.pendingPurchases)} Pending`}
-              subtitle={`Total: ${String(purchaseSummary.totalPurchases)} orders from other agents`}
-            /> */}
-
             {/* You can add more summary cards or quick action buttons here */}
           </View>
         )}
@@ -122,21 +101,44 @@ const AgentHomeScreen = () => {
 };
 
 const localStyles = StyleSheet.create({
+  // Adjusted scroll content to allow full horizontal padding from overviewContainer
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 0,
-    paddingTop: 10,
+    paddingTop: 0, 
   },
+  // Main container for all content below the fixed header
   overviewContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20, 
+    paddingVertical: 15, 
   },
-  sectionHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  // New style for the fixed top header (Agent Overview text)
+  appHeader: {
+    height: 60, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGrey,
+    backgroundColor: COLORS.white, // Or a very light background color
+    paddingHorizontal: 20,
+    paddingTop: 10, // Adjust for SafeAreaView if needed
+  },
+  appTitle: {
+    fontSize: 22,
+    fontWeight: '600', 
     color: COLORS.textDark,
-    marginBottom: 15,
-    marginTop: 10,
-    textAlign: 'center',
+  },
+  // Container for "Quick Overview..." text
+  sectionHeaderContainer: {
+    flexDirection: 'row', 
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 15, 
+  },
+  greetingText: {
+    fontSize: 18, 
+    fontWeight: '500', 
+    color: COLORS.textLight, 
   },
   loadingIndicator: {
     marginTop: 50,

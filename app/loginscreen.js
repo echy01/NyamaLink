@@ -5,18 +5,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert, // Keeping Alert for quick feedback as it's a login screen
+  Alert,
   Dimensions,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator, 
+  ActivityIndicator,
+  StatusBar, // Import StatusBar
 } from "react-native";
 
-import COLORS from './styles/colors'; 
-import api from './api';
+import COLORS from './styles/colors'; // Ensure this path is correct
+import api from './api'; // Ensure this path is correct
 
 const { width } = Dimensions.get("window");
 
@@ -24,7 +25,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -32,176 +33,195 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true); // Show loading indicator
+    setLoading(true);
     try {
-      // Use the API utility for login
       const response = await api.login({ email, password });
-      
-      const { token, user } = response.data; // Assuming API returns token and user object with role and name
+
+      const { token, user } = response.data;
 
       await AsyncStorage.setItem("token", token);
-      
-      // Navigate to dashboard, passing role and name as parameters
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+
+      Alert.alert("Login Successful", `Welcome ${user.name || 'Back'}!`);
+
       router.replace({
         pathname: "/dashboard",
         params: { role: user.role, name: user.name },
       });
 
-    } catch (error) {
-      console.error("Login error:", error.response?.data || error.message);
-      Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials. Please try again.");
-    } finally {
-      setLoading(false); // Hide loading indicator
-    }
-  };
+      } catch (error) {
+        console.error("Login error:", error.response?.data || error.message);
+        Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials. Please try again.");
+      } finally {
+        setLoading(false); // Hide loading indicator
+      }
+    };
 
   return (
-    <View style={localStyles.safeArea}>
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.danger, '#8B0000']} // Deeper red gradient for login
-        style={localStyles.gradientContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <TouchableOpacity onPress={() => router.replace('/')} style={localStyles.backButton}>
-          <MaterialIcons name="arrow-back" size={28} color={COLORS.white} />
-        </TouchableOpacity>
+    <LinearGradient
+      colors={[COLORS.primaryRed, COLORS.darkRed]} // Using our new red gradient
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryRed} />
 
-        <View style={localStyles.content}>
-          <Text style={localStyles.title}>Welcome Back!</Text>
-          <Text style={localStyles.subtitle}>Sign in to your account</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>Welcome Back!</Text>
+        <Text style={styles.subtitle}>Sign in to your account</Text>
 
-          <View style={localStyles.formContainer}>
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={20} color={COLORS.mediumGrey} style={styles.icon} />
             <TextInput
-              style={localStyles.input}
+              style={styles.input}
               placeholder="Email"
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.mediumGrey}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
             />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock" size={20} color={COLORS.mediumGrey} style={styles.icon} />
             <TextInput
-              style={localStyles.input}
+              style={styles.input}
               placeholder="Password"
-              placeholderTextColor={COLORS.textLight}
+              placeholderTextColor={COLORS.mediumGrey}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity onPress={() => router.push('/forgotpassword')}>
-              <Text style={{ color: COLORS.secondary, textAlign: 'right', marginBottom: 12 }}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
+          </View>
 
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={() => router.push("/forgotpassword")}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[localStyles.loginButton, loading && {opacity: 0.7}]} // Dim button when loading
-              onPress={handleLogin}
-              disabled={loading} // Disable button while loading
-            >
-              {loading ? (
-                <ActivityIndicator color={COLORS.white} />
-              ) : (
-                <Text style={localStyles.buttonText}>Log In</Text>
-              )}
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.loginButtonText}>Log In</Text>
+            )}
+          </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.replace('/signupscreen')}>
-              <Text style={localStyles.signupText}>
-                Don't have an account? <Text style={localStyles.signupLink}>Sign Up</Text>
-              </Text>
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push("/signupscreen")}>
+              <Text style={styles.signUpLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </LinearGradient>
-    </View>
+      </View>
+    </LinearGradient>
   );
 }
 
-const localStyles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  gradientContainer: {
-    flex: 1,
-    paddingTop: 80, // Adjust for status bar and header space
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
-    width: '100%',
+    alignItems: "center",
   },
-  backButton: {
-    position: "absolute",
-    left: 20,
-    top: 50, // Adjust based on desired position
-    zIndex: 1,
+  content: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 25,
+    backgroundColor: COLORS.white, // White card background
+    borderRadius: 15,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
-    color: COLORS.white,
-    textAlign: "center",
+    color: COLORS.darkGrey,
     marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)', // Subtle text shadow
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontFamily: ' serif', // Example: Use a modern serif font if available, or a clean sans-serif
   },
   subtitle: {
-    fontSize: 18,
-    color: COLORS.secondary, // Uses a lighter shade from the new palette
+    fontSize: 16,
+    color: COLORS.mediumGrey,
+    marginBottom: 30,
     textAlign: "center",
-    marginBottom: 40,
-    fontWeight: '500',
   },
   formContainer: {
-    width: '100%',
-    maxWidth: 400, // Max width for larger screens
-    alignSelf: 'center', // Center the form
+    width: "100%",
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite, // Very light background for input fields
+    borderRadius: 10,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slightly transparent white
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 16,
-    color: COLORS.white,
+    flex: 1,
+    color: COLORS.darkGrey,
     fontSize: 16,
-    fontWeight: '500',
+    // Remove background from individual input to avoid double background
+  },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: COLORS.primaryRed, // Use primary red for links
+    fontSize: 14,
+    fontWeight: "600",
   },
   loginButton: {
-    backgroundColor: COLORS.accent, // A distinct accent color for the button
+    backgroundColor: COLORS.primaryRed, // Use primary red for main action button
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
+    height: 55, // Consistent height with input fields
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  buttonText: {
+  loginButtonText: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "bold",
   },
-  signupText: {
-    color: COLORS.textLight, // Light text for general info
-    textAlign: "center",
-    marginTop: 20,
+  signUpContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 25,
+  },
+  signUpText: {
+    color: COLORS.mediumGrey,
     fontSize: 15,
   },
-  signupLink: {
-    color: COLORS.secondary, // Matches subtitle for consistent linking
+  signUpLink: {
+    color: COLORS.primaryRed, // Use primary red for links
+    fontSize: 15,
     fontWeight: "bold",
   },
 });

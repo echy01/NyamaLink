@@ -22,6 +22,18 @@ const CustomerProfileScreen = () => {
       Alert.alert('Logout Error', 'Failed to log out. Please try again.');
     }
   };
+  const handleUpdateLocation = async () => {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Permission Denied', 'Please enable location services.');
+    return;
+  }
+
+  const { coords } = await Location.getCurrentPositionAsync({});
+  await api.updateCustomerLocation({ lat: coords.latitude, lng: coords.longitude });
+  Alert.alert('Location Updated', 'Your delivery location has been saved.');
+};
+
 
   return (
     <SafeAreaView style={globalStyles.container}>
@@ -29,6 +41,10 @@ const CustomerProfileScreen = () => {
         <Ionicons name="person-circle-outline" size={80} color={COLORS.textDark} />
         <Text style={localStyles.profileName}>{String(userName)}</Text>
         <Text style={localStyles.profileRole}>Role: Customer</Text>
+        <TouchableOpacity style={globalStyles.button} onPress={handleUpdateLocation}>
+          <Text style={globalStyles.buttonText}>Update My Location</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={globalStyles.buttonOutline} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color={COLORS.primary} />
           <Text style={globalStyles.buttonOutlineText}>Logout</Text>

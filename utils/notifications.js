@@ -5,9 +5,9 @@ import { Platform } from 'react-native';
 // Set default behavior for received notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,       // Show banner alert
-    shouldPlaySound: true,       // Play notification sound
-    shouldSetBadge: false,       // Don’t set badge count on app icon
+    shouldShowAlert: true,       
+    shouldPlaySound: true,      
+    shouldSetBadge: false,       
   }),
 });
 

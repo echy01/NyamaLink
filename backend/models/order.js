@@ -42,6 +42,17 @@ const OrderSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'processing', 'ready_for_pickup', 'dispatched', 'arrived', 'completed', 'cancelled'],
     default: 'pending',
   },
+  deliveryLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: false
+    }
+  },
   dispatchDetails: {
     trackingNumber: { type: String },
     carrier: { type: String },

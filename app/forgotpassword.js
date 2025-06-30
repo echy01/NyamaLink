@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import COLORS from './styles/colors';
-import api from './api';
+// app/forgotpassword.js
+import { MaterialIcons } from "@expo/vector-icons"; // Import MaterialIcons
+import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  StatusBar, // Import StatusBar
+} from "react-native";
+
+import COLORS from './styles/colors'; // Ensure this path is correct
+import api from './api'; // Ensure this path is correct
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -10,7 +23,10 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
 
   const handleRequestReset = async () => {
-    if (!email) return Alert.alert('Missing Email', 'Please enter your email.');
+    if (!email) {
+      Alert.alert('Missing Email', 'Please enter your email.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -26,71 +42,143 @@ export default function ForgotPasswordScreen() {
       });
     } catch (error) {
       console.error('Reset request error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Something went wrong.');
+      const message = error.response?.data?.message || error.message || 'Something went wrong.';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
-      <Text style={styles.subtitle}>Enter your email to receive a reset code.</Text>
+    <LinearGradient
+      colors={[COLORS.primaryRed, COLORS.darkRed]} 
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryRed} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
+      <View style={styles.content}>
+        <Text style={styles.title}>Forgot Password?</Text>
+        <Text style={styles.subtitle}>Enter your email to receive a reset code.</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleRequestReset} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send OTP</Text>}
-      </TouchableOpacity>
-    </View>
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email Address"
+              placeholderTextColor={COLORS.mediumGrey}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.sendOtpButton} // Renamed for clarity
+            onPress={handleRequestReset}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.sendOtpButtonText}>Send OTP</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.backToLoginContainer}>
+            <TouchableOpacity onPress={() => router.replace("/loginscreen")}>
+              <Text style={styles.backToLoginText}>Back to Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-    padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  content: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 25,
+    backgroundColor: COLORS.white, // White card background
+    borderRadius: 15,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: "bold",
+    color: COLORS.darkGrey,
     marginBottom: 10,
+    fontFamily: 'serif', // Consistent font
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textLight,
+    color: COLORS.mediumGrey,
     marginBottom: 30,
+    textAlign: "center",
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite,
+    borderRadius: 10,
+    marginBottom: 20, // Increased margin for spacing before button
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderColor: COLORS.textLight,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
+    color: COLORS.darkGrey,
     fontSize: 16,
-    color: COLORS.white,
-    marginBottom: 20,
   },
-  button: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
+  sendOtpButton: { // Renamed from 'button' for clarity
+    backgroundColor: COLORS.primaryRed,
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    height: 55,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  buttonText: {
+  sendOtpButtonText: { // Renamed from 'buttonText'
     color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  backToLoginContainer: {
+    marginTop: 25,
+    alignItems: "center",
+  },
+  backToLoginText: {
+    color: COLORS.primaryRed, // Use primary red for links
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });

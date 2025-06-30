@@ -72,13 +72,13 @@ const AgentLayout = () => {
           headerTitle: 'Orders from Butchers',
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="butchers"
         options={{
           title: 'Butchers',
           headerTitle: 'Registered Butchers',
         }}
-      />
+      /> */}
        <Tabs.Screen
         name="profile"
         options={{

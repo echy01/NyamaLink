@@ -3,7 +3,8 @@ import {
   getAvailableMeat,
   placeOrder,
   getMyOrders,
-  getInventoryByButcherId
+  getInventoryByButcherId,
+  updateCustomerLocation
 } from '../controllers/customercontroller.js'; 
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -19,5 +20,8 @@ router.post('/place-order', protect, placeOrder);
 
 // 🧾 Get customer's own order history
 router.get('/my-orders', protect, getMyOrders);
+
+router.put('/profile/location', protect, updateCustomerLocation);
+
 
 export default router;

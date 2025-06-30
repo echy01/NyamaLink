@@ -38,7 +38,7 @@ const api = {
   addSlaughterhouseInventory: (itemData) =>
     instance.post("/agent/inventory", itemData),
   getButcheryOrders: () => instance.get("/agent/orders"),
-  getButchers: () => instance.get("/agent/butchers"),
+  // getButchers: () => instance.get("/agent/butchers"),
   getAvailableMeatForPurchase: () => instance.get("/agent/purchase/available"),
   placeMeatOrderToSlaughterhouse: (meatId, quantity) =>
     instance.post("/agent/purchase/order", { meatId, quantity }),
@@ -126,6 +126,9 @@ const api = {
     instance.get(`/butcher/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
   getInventoryByButcherId: (butcherId) =>
     instance.get(`/customer/butcher-inventory/${butcherId}`),
+  updateCustomerLocation: ({ lat, lng }) =>
+  instance.put('/customer/profile/location', { lat, lng }),
+
 
   // 💳 Payment Endpoints
   initializePayment: (payload) => instance.post(`/payment/initialize`, payload),

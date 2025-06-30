@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../api";
 import COLORS from "../styles/colors";
 import globalStyles from "../styles/globalStyles";
-import socket from "../../utils/socket"; // ✅ Add your socket setup here
+import socket from "../../utils/socket"; 
 
 const NotificationItem = ({ notification }) => {
   const getIconAndColor = (type) => {

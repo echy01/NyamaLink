@@ -1,20 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import COLORS from './styles/colors';
-import api from './api';
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  StatusBar, 
+} from "react-native";
+
+import COLORS from './styles/colors'; 
+import api from './api'; 
 
 export default function ResetPasswordScreen() {
   const localParams = useLocalSearchParams();
   const [email, setEmail] = useState(localParams?.email || '');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleReset = async () => {
-    if (!email || !code || !newPassword) {
-      return Alert.alert('Missing Info', 'Please fill in all fields.');
+    if (!email || !code || !newPassword || !confirmPassword) {
+      Alert.alert('Missing Info', 'Please fill in all fields.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match.');
+      return;
     }
 
     setLoading(true);
@@ -32,81 +51,177 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Reset Password</Text>
-      <Text style={styles.subtitle}>Enter your email, reset code, and new password.</Text>
+    <LinearGradient
+      colors={[COLORS.primaryRed, COLORS.darkRed]} 
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryRed} />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
+      <View style={styles.content}>
+        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.subtitle}>Enter the code and your new password.</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Reset Code"
-        keyboardType="numeric"
-        value={code}
-        onChangeText={setCode}
-        maxLength={6}
-      />
+        <View style={styles.formContainer}>
+          {/* Email (read-only or pre-filled) */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="email" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email Address"
+              placeholderTextColor={COLORS.mediumGrey}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail} 
+              editable={!localParams?.email} 
+            />
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        secureTextEntry
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
+          {/* Reset Code */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="vpn-key" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Reset Code (OTP)"
+              placeholderTextColor={COLORS.mediumGrey}
+              keyboardType="numeric"
+              value={code}
+              onChangeText={setCode}
+              maxLength={6} // Assuming 6 digit OTP
+            />
+          </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleReset} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Reset Password</Text>}
-      </TouchableOpacity>
-    </View>
+          {/* New Password */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="New Password"
+              placeholderTextColor={COLORS.mediumGrey}
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+          </View>
+
+          {/* Confirm New Password */}
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="lock-outline" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm New Password"
+              placeholderTextColor={COLORS.mediumGrey}
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.resetButton} 
+            onPress={handleReset}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.resetButtonText}>Reset Password</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.backToLoginContainer}>
+            <TouchableOpacity onPress={() => router.replace("/loginscreen")}>
+              <Text style={styles.backToLoginText}>Back to Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-    padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  content: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 25,
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: "bold",
+    color: COLORS.darkGrey,
     marginBottom: 10,
+    fontFamily: 'serif', 
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textLight,
+    color: COLORS.mediumGrey,
     marginBottom: 30,
+    textAlign: "center",
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite,
+    borderRadius: 10,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderColor: COLORS.textLight,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flex: 1,
+    color: COLORS.darkGrey,
     fontSize: 16,
-    color: COLORS.white,
-    marginBottom: 20,
   },
-  button: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
+  resetButton: { 
+    backgroundColor: COLORS.primaryRed,
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    height: 55,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  buttonText: {
+  resetButtonText: { 
     color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  backToLoginContainer: {
+    marginTop: 25,
+    alignItems: "center",
+  },
+  backToLoginText: {
+    color: COLORS.primaryRed, 
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });

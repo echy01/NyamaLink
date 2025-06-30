@@ -1,4 +1,3 @@
-// app/signupscreen.js
 import { MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -6,17 +5,18 @@ import React, { useState } from "react";
 import {
   Alert,
   Dimensions,
-  ScrollView,
+  ScrollView, 
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
+  StatusBar, 
 } from "react-native";
 
-import COLORS from './styles/colors';
-import api from './api';
+import COLORS from './styles/colors'; 
+import api from './api'; 
 
 const { width } = Dimensions.get("window");
 
@@ -34,7 +34,7 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     if (!name || !email || !phoneNumber || !password || !confirmPassword || !role) {
-      Alert.alert("Error", "Please fill in all fields including phone number.");
+      Alert.alert("Error", "Please fill in all fields including your role.");
       return;
     }
 
@@ -53,87 +53,108 @@ export default function SignUpScreen() {
         role,
       });
 
-      if (response.status === 201 || response.status === 200) {
-        Alert.alert('Success', 'Account created successfully! Please log in.');
-        router.replace('/loginscreen');
-      }
+      Alert.alert("Sign Up Successful", response.data.message || "Account created successfully! Please log in.");
+      router.replace("/loginscreen");
     } catch (error) {
-      console.error("Signup Error:", error.response?.data || error.message);
-      Alert.alert("Signup Failed", error.response?.data?.message || "Try again.");
+      console.error("Sign up error:", error);
+      const message = error.response?.data?.message || error.message || 'Something went wrong during sign up.';
+      Alert.alert("Sign Up Failed", message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={localStyles.safeArea}>
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.danger, '#8B0000']}
-        style={localStyles.gradientContainer}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <TouchableOpacity onPress={() => router.replace('/')} style={localStyles.backButton}>
-          <MaterialIcons name="arrow-back" size={28} color={COLORS.white} />
-        </TouchableOpacity>
+    <LinearGradient
+      colors={[COLORS.primaryRed, COLORS.darkRed]} 
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryRed} />
 
-        <ScrollView contentContainerStyle={localStyles.scrollContent}>
-          <Text style={localStyles.title}>Create Account</Text>
-          <Text style={localStyles.subtitle}>Join us today!</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join us today!</Text>
 
-          <View style={localStyles.formContainer}>
-            <TextInput
-              style={localStyles.input}
-              placeholder="Full Name"
-              placeholderTextColor={COLORS.textLight}
-              autoCapitalize="words"
-              value={name}
-              onChangeText={setName}
-            />
-            <TextInput
-              style={localStyles.input}
-              placeholder="Email"
-              placeholderTextColor={COLORS.textLight}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={localStyles.input}
-              placeholder="Phone Number"
-              placeholderTextColor={COLORS.textLight}
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-            />
-            <TextInput
-              style={localStyles.input}
-              placeholder="Password"
-              placeholderTextColor={COLORS.textLight}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TextInput
-              style={localStyles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor={COLORS.textLight}
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="person" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                placeholderTextColor={COLORS.mediumGrey}
+                autoCapitalize="words"
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
 
-            <Text style={localStyles.label}>Select Your Role:</Text>
-            <View style={localStyles.roles}>
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={COLORS.mediumGrey}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="phone" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                placeholderTextColor={COLORS.mediumGrey}
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={COLORS.mediumGrey}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock-outline" size={20} color={COLORS.mediumGrey} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor={COLORS.mediumGrey}
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+            </View>
+
+            <Text style={styles.label}>Select Your Role:</Text>
+            <View style={styles.rolesContainer}>
               {roles.map((r) => (
                 <TouchableOpacity
                   key={r}
-                  style={[localStyles.roleButton, role === r && localStyles.selectedRole]}
+                  style={[
+                    styles.roleButton,
+                    role === r && styles.selectedRole,
+                  ]}
                   onPress={() => setRole(r)}
-                  disabled={loading}
                 >
-                  <Text style={[localStyles.roleText, role === r && localStyles.selectedRoleText]}>
+                  <Text style={[
+                    styles.roleText,
+                    role === r && styles.selectedRoleText,
+                  ]}>
                     {r.charAt(0).toUpperCase() + r.slice(1)}
                   </Text>
                 </TouchableOpacity>
@@ -141,143 +162,158 @@ export default function SignUpScreen() {
             </View>
 
             <TouchableOpacity
-              style={[localStyles.signupButton, loading && { opacity: 0.7 }]}
+              style={styles.signupButton}
               onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={localStyles.buttonText}>Sign Up</Text>
+                <Text style={styles.signupButtonText}>Sign Up</Text>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.replace('/loginscreen')}>
-              <Text style={localStyles.loginText}>
-                Already have an account? <Text style={localStyles.loginLink}>Log In</Text>
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/loginscreen")}>
+                <Text style={styles.loginLink}>Log In</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </ScrollView>
-      </LinearGradient>
-    </View>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
-const localStyles = StyleSheet.create({
-  safeArea: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  gradientContainer: {
-    flex: 1,
-    paddingTop: 80, // Adjust for status bar and header space
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingBottom: 40, // Ensure content isn't cut off at the bottom
+    alignItems: "center",
+    paddingVertical: 40, 
   },
-  backButton: {
-    position: "absolute",
-    left: 20,
-    top: 50,
-    zIndex: 1,
+  content: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 25,
+    backgroundColor: COLORS.white, 
+    borderRadius: 15,
+    alignItems: "center",
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
-    color: COLORS.white,
-    textAlign: "center",
+    color: COLORS.darkGrey,
     marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontFamily: 'serif', 
   },
   subtitle: {
-    fontSize: 18,
-    color: COLORS.secondary,
+    fontSize: 16,
+    color: COLORS.mediumGrey,
+    marginBottom: 30,
     textAlign: "center",
-    marginBottom: 40,
-    fontWeight: '500',
   },
   formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
+    width: "100%",
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.offWhite,
+    borderRadius: 10,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    height: 55,
+    borderWidth: 1,
+    borderColor: COLORS.lightGrey,
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 16,
-    color: COLORS.white,
+    flex: 1,
+    color: COLORS.darkGrey,
     fontSize: 16,
-    fontWeight: '500',
   },
   label: {
     fontSize: 16,
-    marginBottom: 12,
-    color: COLORS.textLight,
     fontWeight: "600",
+    color: COLORS.darkGrey, 
+    marginBottom: 10, 
+    marginTop: 10, 
   },
-  roles: {
+  rolesContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 20, 
+    flexWrap: 'wrap', 
   },
   roleButton: {
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: COLORS.lightGrey,
+    backgroundColor: COLORS.offWhite,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 20,
-    flex: 1,
-    marginHorizontal: 5,
+    borderRadius: 10, 
+    flex: 1, 
+    marginHorizontal: 4, 
     alignItems: "center",
+    minWidth: 100, 
+    marginBottom: 8, 
   },
   selectedRole: {
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderColor: COLORS.white,
+    backgroundColor: COLORS.primaryRed, 
+    borderColor: COLORS.primaryRed,
   },
   roleText: {
-    color: COLORS.textLight,
+    color: COLORS.mediumGrey,
     fontWeight: "500",
+    fontSize: 15,
   },
   selectedRoleText: {
-    color: COLORS.white,
+    color: COLORS.white, 
     fontWeight: "bold",
   },
   signupButton: {
-    backgroundColor: COLORS.accent, // Distinct accent color for the button
+    backgroundColor: COLORS.primaryRed,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
+    height: 55,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  buttonText: {
+  signupButtonText: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "bold",
+  },
+  loginContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 25,
   },
   loginText: {
-    color: COLORS.textLight,
-    textAlign: "center",
-    marginTop: 20,
+    color: COLORS.mediumGrey,
     fontSize: 15,
   },
   loginLink: {
+    color: COLORS.primaryRed,
+    fontSize: 15,
     fontWeight: "bold",
-    color: COLORS.secondary,
   },
 });
