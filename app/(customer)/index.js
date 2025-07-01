@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import InfoCard from '../../components/InfoCard';
 import api from '../api';
 import COLORS from '../styles/colors';
@@ -43,6 +44,7 @@ const CustomerBrowseMeatScreen = () => {
   const [showPlaceOrderModal, setShowPlaceOrderModal] = useState(false);
   const [currentMeatItem, setCurrentMeatItem] = useState(null);
   const [orderQuantity, setOrderQuantity] = useState('');
+  const [deliveryLocation, setDeliveryLocation] = useState(null);
 
   const fetchAvailableMeat = useCallback(async () => {
     setRefreshing(true);
@@ -59,24 +61,54 @@ const CustomerBrowseMeatScreen = () => {
     }
   }, []);
 
+// Function to get current location
+const getCurrentLocation = async () => {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') {
+    return Alert.alert('Permission Denied', 'Please enable location to proceed.');
+  }
+
+  const { coords } = await Location.getCurrentPositionAsync({});
+  setDeliveryLocation({
+    type: 'Point',
+    coordinates: [coords.longitude, coords.latitude],
+  });
+
+  Alert.alert('📍 Location Set', 'Your current location will be used for delivery.');
+};
+
+
+
   const handlePlaceOrder = async () => {
     if (!currentMeatItem || !orderQuantity) {
       Alert.alert('Error', 'Please select a meat item and enter a quantity.');
       return;
     }
+
     const quantity = parseFloat(orderQuantity);
     if (isNaN(quantity) || quantity <= 0) {
       Alert.alert('Error', 'Quantity must be a positive number.');
       return;
     }
+
     if (quantity > currentMeatItem.quantity) {
       Alert.alert('Error', `Requested quantity exceeds available stock (${currentMeatItem.quantity}kg).`);
       return;
     }
 
+    if (!deliveryLocation) {
+      Alert.alert('Missing Location', 'Please tap "Use My Current Location" to set a delivery location.');
+      return;
+    }
+
     setShowPlaceOrderModal(false);
     try {
-      await api.placeCustomerOrder(currentMeatItem._id, quantity);
+      await api.placeCustomerOrder({
+        meatId: currentMeatItem._id,
+        quantity,
+        deliveryLocation, 
+      });
+
       Alert.alert('Success', `Order for ${quantity}kg of ${currentMeatItem.meatType} placed successfully.`);
       setOrderQuantity('');
       fetchAvailableMeat();
@@ -162,6 +194,12 @@ const CustomerBrowseMeatScreen = () => {
               value={orderQuantity}
               onChangeText={setOrderQuantity}
             />
+            <TouchableOpacity
+              style={[globalStyles.button, { marginVertical: 12 }]}
+              onPress={getCurrentLocation}
+            >
+              <Text style={globalStyles.buttonText}>Use My Current Location</Text>
+            </TouchableOpacity>
 
             <View style={localStyles.modalButtons}>
               <TouchableOpacity

@@ -114,8 +114,8 @@ const api = {
 
   // 👤 Customer Endpoints
   getAvailableMeatForCustomers: () => instance.get("/customer/available-meat"),
-  placeCustomerOrder: (meatId, quantity) =>
-    instance.post("/customer/place-order", { meatId, quantity }),
+  placeCustomerOrder: ({meatId, quantity, deliveryLocation}) =>
+    instance.post("/customer/place-order", { meatId, quantity, deliveryLocation }),
   getMyCustomerOrders: () => instance.get("/customer/my-orders"),
   updateMyCustomerOrderStatus: (orderId, status, deliveryConfirmation = {}) =>
     instance.put(`/customer/my-orders/${orderId}/status`, {
