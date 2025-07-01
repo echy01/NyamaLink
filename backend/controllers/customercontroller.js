@@ -36,7 +36,8 @@ const getAvailableMeat = asyncHandler(async (req, res) => {
 
 // 🛒 Place a customer order
 const placeOrder = asyncHandler(async (req, res) => {
-  const { meatId, quantity } = req.body;
+  console.log('📦 Incoming order payload:', req.body); 
+  const { meatId, quantity, deliveryLocation } = req.body;
 
   if (!meatId || !quantity || quantity <= 0) {
     res.status(400);
@@ -77,6 +78,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     totalPrice,
     status: 'pending',
     paymentStatus: { status: 'unpaid' },
+    deliveryLocation: deliveryLocation || undefined,
   });
 
   await newOrder.save();

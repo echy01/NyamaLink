@@ -398,3 +398,59 @@ export const getNearbyButchers = asyncHandler(async (req, res) => {
 
   res.status(200).json({ nearbyButchers });
 });
+export const placeCustomerOrder = asyncHandler(async (req, res) => {
+  const { meatId, quantity, deliveryLocation } = req.body;
+
+  if (!meatId || !quantity || quantity <= 0) {
+    res.status(400);
+    throw new Error('Meat ID and a valid quantity are required.');
+  }
+
+  if (!req.user || !req.user._id || req.user.role !== 'customer') {
+    res.status(401);
+    throw new Error('Not authorized, user is not a customer or ID not found');
+  }
+
+  const meat = await Inventory.findById(meatId);
+  if (!meat) {
+    res.status(404);
+    throw new Error('Meat item not found');
+  }
+
+  if (meat.quantity < quantity) {
+    res.status(400);
+    throw new Error(`Requested quantity (${quantity}kg) exceeds available stock (${meat.quantity}kg).`);
+  }
+
+  const totalPrice = meat.pricePerKg * quantity;
+
+  const newOrder = new Order({
+    meatId,
+    quantity,
+    totalPrice,
+    pricePerKgAtOrder: meat.pricePerKg,
+    meatType: meat.meatType,
+    butcherId: meat.ownerId,
+    butcheryName: meat.slaughterhouseName,
+    customerId: req.user._id,
+    status: 'pending',
+    deliveryLocation: deliveryLocation ? {
+      type: 'Point',
+      coordinates: deliveryLocation.coordinates,
+    } : undefined,
+  });
+
+  await newOrder.save();
+
+  // ✅ Emit Socket.IO Notification
+  const io = req.app.get('io');
+  io.emit('new_notification', {
+    title: '🛒 New Customer Order',
+    message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meat.meatType}`,
+    timestamp: new Date(),
+    type: 'order_status_update',
+    read: false,
+  });
+
+  res.status(201).json({ message: 'Order placed successfully', order: newOrder });
+});
