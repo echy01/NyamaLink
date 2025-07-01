@@ -146,6 +146,7 @@ export const getCustomerOrdersForButcher = asyncHandler(async (req, res) => {
     deliveryConfirmation: order.deliveryConfirmation, 
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    deliveryLocation: order.deliveryLocation,
   }));
 
   res.json({ orders: formattedOrders });
