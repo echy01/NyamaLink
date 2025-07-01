@@ -10,6 +10,8 @@ import paymentRoutes from './routes/paymentroutes.js';
 import purchaseroutes from './routes/purchaseroutes.js'; 
 import notificationRoutes from './routes/notificationRoutes.js';
 import otpRoutes from './routes/otproutes.js';
+import adminRoutes from './routes/adminroutes.js'; 
+import { sms } from './utils/africastalking.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -75,6 +77,9 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/purchase', purchaseroutes);
 app.use('/api/notification', notificationRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.set('africasTalkingSms', sms);
 
 // Logger middleware
 app.use((req, res, next) => {
@@ -85,5 +90,5 @@ app.use((req, res, next) => {
 // ✅ Use `server.listen` instead of `app.listen`
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on `);
 });

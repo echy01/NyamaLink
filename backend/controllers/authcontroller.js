@@ -7,9 +7,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 const JWT_EXPIRES_IN = '7d';
 const JWT_RESET_EXPIRES_IN = '15m';
 
-// Generate a token
-const generateToken = (id) => {
-  return jwt.sign({ id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+// MODIFIED: Generate a token - now includes user's role
+const generateToken = (id, role) => { // Added role parameter
+  return jwt.sign({ id, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN }); 
 };
 
 // @route   POST /api/auth/signup
@@ -32,12 +32,12 @@ export const signup = async (req, res) => {
 
     res.status(201).json({
       message: 'User created successfully',
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.role), // Pass role to generateToken
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role, // Ensure role is returned
       },
     });
   } catch (error) {
@@ -47,6 +47,7 @@ export const signup = async (req, res) => {
 };
 
 // @route   POST /api/auth/login
+// MODIFIED: Login function - now returns user role
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -58,12 +59,12 @@ export const login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: 'Invalid email or password.' });
 
     res.status(200).json({
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.role), // Pass role to generateToken
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role, // Ensure role is returned in the response
       },
     });
   } catch (error) {
@@ -75,7 +76,8 @@ export const login = async (req, res) => {
 // @route   GET /api/auth/profile
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    // req.user will now have the role from the JWT payload
+    const user = await User.findById(req.user.id).select('-password'); // Use req.user.id
     if (!user) return res.status(404).json({ message: 'User not found.' });
     res.status(200).json({ user });
   } catch (error) {
@@ -110,7 +112,6 @@ export const requestPasswordReset = async (req, res) => {
     res.status(500).json({ message: 'Error sending reset code.' });
   }
 };
-
 
 // @route   POST /api/auth/reset-password
 export const resetPassword = async (req, res) => {

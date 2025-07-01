@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Inventory from '../models/inventory.js';
 import Order from '../models/order.js';       
 import Purchase from '../models/purchase.js'; 
-import User from '../models/User.js';        
+import User from '../models/User.js';      
 
 export const getInventory = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id || req.user.role !== 'butcher') {
@@ -192,6 +192,31 @@ export const updateCustomerOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found or unauthorized');
   }
 
+    // ✅ Send SMS when order has arrived
+  if (status === 'arrived') {
+    const sms = req.app.get('africasTalkingSms'); 
+
+    // Fetch customer details to get the phone number
+    const customer = await User.findById(updatedOrder.customerId);
+    const customerPhone = customer?.phone; // Assuming 'phone' field exists on User model
+
+    if (customerPhone) {
+      const message = `Hi ${updatedOrder.customerName || 'Customer'}, your order ${updatedOrder._id} has arrived! 🍖`;
+
+      try {
+        await sms.send({
+          to: [customerPhone],
+          message,
+        });
+        console.log(`📤 SMS sent to ${customerPhone}`);
+      } catch (smsError) {
+        console.error('❌ Failed to send SMS:', smsError);
+      }
+    } else {
+      console.warn(`⚠️ Customer phone number not found for order ${updatedOrder._id}, SMS not sent.`);
+    }
+  }
+
   // ✅ Emit Socket.IO Notification
   const io = req.app.get('io');
   io.emit('new_notification', {
@@ -289,14 +314,19 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
 
   await newPurchase.save();
 
-  // ✅ Emit Socket.IO Notification
+  // ✅ Deduct quantity from the agent's (slaughterhouse) inventory
+  meatToPurchase.quantity -= quantity;
+  await meatToPurchase.save();
+
+  // ✅ Emit Socket.IO Notification to the selling agent
   const io = req.app.get('io');
   io.emit('new_notification', {
-    title: '🔁 New Slaughterhouse Order',
-    message: `${req.user.name || 'A butcher'} placed an order for ${quantity}kg of ${meatToPurchase.meatType}`,
+    title: '🔁 New Butcher Order Received',
+    message: `${req.user.name || 'A butcher'} placed an order for ${quantity}kg of ${meatToPurchase.meatType} from your inventory.`,
     timestamp: new Date(),
-    type: 'purchase_status_update',
+    type: 'purchase_status_update', // Or a more specific type like 'agent_inventory_update'
     read: false,
+    recipientId: meatToPurchase.ownerId // Target the agent whose inventory was affected
   });
 
   res.status(201).json({ message: 'Purchase order to slaughterhouse placed successfully!', order: newPurchase });
@@ -443,14 +473,19 @@ export const placeCustomerOrder = asyncHandler(async (req, res) => {
 
   await newOrder.save();
 
-  // ✅ Emit Socket.IO Notification
+  // ✅ Deduct quantity from the butcher's inventory
+  meat.quantity -= quantity;
+  await meat.save();
+
+  // ✅ Emit Socket.IO Notification to the butcher
   const io = req.app.get('io');
   io.emit('new_notification', {
     title: '🛒 New Customer Order',
-    message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meat.meatType}`,
+    message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meat.meatType} from your inventory.`,
     timestamp: new Date(),
     type: 'order_status_update',
     read: false,
+    recipientId: meat.ownerId 
   });
 
   res.status(201).json({ message: 'Order placed successfully', order: newOrder });

@@ -7,15 +7,18 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
-  Alert, // Added Alert for error handling, as used in fetchButcherSummaries
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles'; // Assuming this contains basic container/text styles
-import InfoCard from '../../components/InfoCard'; // Assuming this is a custom component
-import api from '../api'; // Assuming this handles API calls
-import COLORS from '../styles/colors'; // Your defined color palette
+import globalStyles from '../styles/globalStyles';
+import InfoCard from '../../components/InfoCard';
+import api from '../api';
+import COLORS from '../styles/colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import io from 'socket.io-client'; 
+
+const SOCKET_SERVER_URL = '192.168.1.3:5000'; 
 
 const ButcherHomeScreen = () => {
   const params = useLocalSearchParams();
@@ -28,6 +31,9 @@ const ButcherHomeScreen = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // You might also want to add state for unread notifications if you uncommented that part
+  const [unreadNotifications, setUnreadNotifications] = useState(0); 
 
   const fetchButcherSummaries = useCallback(async () => {
     setRefreshing(true);
@@ -54,7 +60,6 @@ const ButcherHomeScreen = () => {
         pendingPurchases: currentPurchases.filter(purchase => purchase.status === 'pending').length,
         totalPurchases: currentPurchases.length,
       });
-
     } catch (err) {
       console.error('❌ Butcher Home Load Error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load dashboard summaries. Please try again.');
@@ -66,66 +71,127 @@ const ButcherHomeScreen = () => {
 
   useEffect(() => {
     fetchButcherSummaries();
-  }, [fetchButcherSummaries]);
+
+    // Initialize Socket.IO connection
+    const socket = io(SOCKET_SERVER_URL, {
+      transports: ['websocket'], // Use WebSocket first
+    });
+
+    socket.on('connect', () => {
+      console.log('🟢 Socket.IO connected in ButcherHomeScreen');
+      // Join a room specific to the butcher's ID for targeted notifications
+      // You'll need to get the butcher's ID from authentication context or params
+      const butcherId = params.userId; // Assuming userId is passed via params or available from auth context
+      if (butcherId) {
+        socket.emit('join_room', butcherId);
+      }
+    });
+
+    socket.on('new_notification', (notification) => {
+      console.log('🔔 New notification received:', notification);
+      Alert.alert(notification.title, notification.message);
+      // Optional: Update notification badge or list
+      setUnreadNotifications(prev => prev + 1); // Example: Increment unread count
+      // Also, re-fetch summaries if a notification indicates a data change (e.g., new order)
+      if (notification.type === 'order_update' || notification.type === 'new_order') {
+        fetchButcherSummaries();
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Socket.IO disconnected from ButcherHomeScreen');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket.IO connection error in ButcherHomeScreen:', err.message);
+    });
+
+    return () => {
+      console.log('AgentHomeScreen unmounting, disconnecting socket...');
+      socket.disconnect();
+    };
+  }, [fetchButcherSummaries, params.userId]); // Add params.userId to dependencies
+
+  // Function to navigate to inventory screen
+  const navigateToInventory = () => {
+    router.push('/(butcher)/inventory'); // Adjust this path if your inventory screen is elsewhere
+  };
 
   return (
     <SafeAreaView style={globalStyles.container}>
-      {/* Top Header Bar for "Butcher Overview" */}
-      <View style={localStyles.appHeader}>
-        <Text style={localStyles.appTitle}>Butcher Overview</Text>
-      </View>
-
       <ScrollView
         contentContainerStyle={localStyles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchButcherSummaries} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={fetchButcherSummaries} />
+        }
       >
-        {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
-        ) : (
-          <View style={localStyles.overviewContainer}>
-            {/* Main Section Header with Notification Icon */}
-            <View style={localStyles.sectionHeaderContainer}>
-              <Text style={localStyles.greetingText}>Quick Overview for {userName}</Text>
-              <TouchableOpacity onPress={() => router.push('/notification')} style={localStyles.notificationIconWrapper}>
-                <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
-                {/* Optional: Add a badge for unread notifications */}
-                {/* <View style={localStyles.notificationBadge} /> */}
-              </TouchableOpacity>
-            </View>
+        <View style={localStyles.appHeader}>
+          <Text style={localStyles.appTitle}>Butcher Overview</Text>
+        </View>
 
-            {/* Info Cards */}
-            <InfoCard
-              icon="cube-outline"
-              title="Total Inventory Stock"
-              value={`${String(inventorySummary.totalStock)} kg`}
-              subtitle={`Across ${String(inventorySummary.distinctItems)} unique meat types`}
-              // Example of adding custom styles if InfoCard supports it
-              // cardStyle={localStyles.infoCardStyle}
-              // valueStyle={localStyles.infoCardValue}
-            />
-
-            <InfoCard
-              icon="receipt-outline"
-              title="Customer Orders"
-              value={`${String(ordersSummary.pendingOrders)} Pending`}
-              subtitle={`Total: ${String(ordersSummary.totalOrders)} orders`}
-            />
-
-            <InfoCard
-              icon="cart-outline"
-              title="Slaughterhouse Purchases"
-              value={`${String(purchaseSummary.pendingPurchases)} Pending`}
-              subtitle={`Total: ${String(purchaseSummary.totalPurchases)} purchases`}
-            />
-
-            <InfoCard
-              icon="business-outline"
-              title="Your Butchery"
-              value={String(userName)}
-              subtitle="Providing fresh cuts to the community!"
-            />
+        <View style={localStyles.overviewContainer}>
+          <View style={localStyles.sectionHeaderContainer}>
+            <Text style={localStyles.greetingText}>
+              Welcome back,{' '}
+              <Text style={{ fontWeight: 'bold', color: COLORS.primary }}>
+                {userName}!
+              </Text>
+            </Text>
+            {/* Optional: Notification Icon - uncomment and implement unreadNotifications state if needed */}
+            {/*
+            <TouchableOpacity style={localStyles.notificationIconWrapper} onPress={() => router.push('/(butcher)/notifications')}>
+              <Ionicons name="notifications-outline" size={24} color={COLORS.textDark} />
+              {unreadNotifications > 0 && <View style={localStyles.notificationBadge} />}
+            </TouchableOpacity>
+            */}
           </View>
-        )}
+
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
+          ) : (
+            <View>
+              <Text style={globalStyles.sectionTitle}>Quick Summaries</Text>
+
+              {/* Inventory Summary Card */}
+              <InfoCard
+                title="Total Inventory Stock"
+                value={`${inventorySummary.totalStock} Kg`}
+                subtitle={`${inventorySummary.distinctItems} distinct items`}
+                icon="cube-outline"
+                color={COLORS.info}
+              />
+
+              {/* Orders Summary Card */}
+              <InfoCard
+                title="Customer Orders"
+                value={`${String(ordersSummary.pendingOrders)} Pending`}
+                subtitle={`Total: ${String(ordersSummary.totalOrders)} orders`}
+                icon="list-outline"
+                color={COLORS.warning}
+              />
+
+              {/* Purchases Summary Card (from slaughterhouses) */}
+              <InfoCard
+                title="My Purchase Orders"
+                value={`${String(purchaseSummary.pendingPurchases)} Pending`}
+                subtitle={`Total: ${String(purchaseSummary.totalPurchases)} purchases`}
+                icon="wallet-outline"
+                color={COLORS.success}
+              />
+
+              {/* New: Button to manage inventory */}
+              <TouchableOpacity
+                style={[globalStyles.button, { marginTop: 20, backgroundColor: COLORS.secondary }]}
+                onPress={navigateToInventory}
+              >
+                <Ionicons name="pricetags-outline" size={20} color={COLORS.white} style={{ marginRight: 10 }} />
+                <Text style={globalStyles.buttonText}>Manage My Inventory</Text>
+              </TouchableOpacity>
+
+              {/* You can add more summary cards or quick action buttons here */}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -135,16 +201,16 @@ const localStyles = StyleSheet.create({
   // Adjusted scroll content to allow full horizontal padding from overviewContainer
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 0, // No top padding here as appHeader takes care of it
+    paddingTop: 0, 
   },
   // Main container for all content below the fixed header
   overviewContainer: {
-    paddingHorizontal: 20, // Increased horizontal padding for a cleaner look
-    paddingVertical: 15, // Add some vertical padding at the top of the scrollable content
+    paddingHorizontal: 20, 
+    paddingVertical: 15, 
   },
-  // New style for the fixed top header (Butcher Overview text)
+  // New style for the fixed top header (Agent Overview text)
   appHeader: {
-    height: 60, // Fixed height for the header
+    height: 60, 
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -155,16 +221,16 @@ const localStyles = StyleSheet.create({
   },
   appTitle: {
     fontSize: 22,
-    fontWeight: '600', // Slightly less bold than 'bold' for a refined look
+    fontWeight: '600', 
     color: COLORS.textDark,
   },
-  // Container for "Quick Overview..." text and Notification Icon
+  // Container for "Quick Overview..." text
   sectionHeaderContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'row', 
+    justifyContent: 'flex-start', // Changed to flex-start
     alignItems: 'center',
-    marginBottom: 20, // Increased space below the header
-    marginTop: 15, // Space above the header within the scroll view
+    marginBottom: 20,
+    marginTop: 15,
   },
   greetingText: {
     fontSize: 18, // Slightly smaller than before, more like a subtitle
@@ -193,21 +259,6 @@ const localStyles = StyleSheet.create({
   loadingIndicator: {
     marginTop: 50,
   },
-  // Example styles for InfoCard if you want to override its internal look
-  // infoCardStyle: {
-  //   borderRadius: 12, // More rounded corners
-  //   shadowColor: COLORS.darkGrey,
-  //   shadowOffset: { width: 0, height: 4 },
-  //   shadowOpacity: 0.1,
-  //   shadowRadius: 8,
-  //   elevation: 5,
-  //   marginBottom: 15, // Increased spacing between cards
-  // },
-  // infoCardValue: {
-  //   fontSize: 24, // Larger value text
-  //   fontWeight: 'bold',
-  //   color: COLORS.primary,
-  // },
 });
 
 export default ButcherHomeScreen;

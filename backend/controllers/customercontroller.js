@@ -69,6 +69,8 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const newOrder = new Order({
     customerId: req.user._id,
+    customerPhone: user.phone, 
+    customerName: user.name,
     butcherId: meatToOrder.ownerId,
     butcheryName: meatToOrder.slaughterhouseName,
     meatId: meatToOrder._id,

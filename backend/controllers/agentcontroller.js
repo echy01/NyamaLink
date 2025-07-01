@@ -128,6 +128,12 @@ export const placeMeatOrder = asyncHandler(async (req, res) => {
 
   await newPurchase.save();
 
+  // Removed inventory deduction from here as per clarification that agents only receive orders.
+  // The deduction now occurs in butchercontroller.js when a butcher orders from an agent.
+
+  // Removed direct Socket.IO emission from here related to inventory decrement as the butcher's
+  // controller now handles notifying the agent when a butcher places an order from them.
+
   res.status(201).json({ message: 'Purchase order placed successfully!', order: newPurchase });
 });
 

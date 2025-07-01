@@ -7,18 +7,36 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  TouchableOpacity // Added for notification icon if desired
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 import globalStyles from '../styles/globalStyles';
 import InfoCard from '../../components/InfoCard';
 import api from '../api';
 import COLORS from '../styles/colors';
 import { useLocalSearchParams } from 'expo-router';
+import io from 'socket.io-client'; // Import socket.io-client
+
+
+const SOCKET_SERVER_URL = 'http://192.168.1.3:5000'; 
 
 const AgentHomeScreen = () => {
   const params = useLocalSearchParams();
   const userName = params.name || 'Slaughterhouse Agent';
+  // const [agentId, setAgentId] = useState(null);
+  // useEffect(() => {
+  //   const fetchUserId = async () => {
+  //     try {
+  //       const userProfile = await api.getProfile(); // Assuming an API endpoint to get current user's profile
+  //       setAgentId(userProfile.data._id);
+  //     } catch (error) {
+  //       console.error("Failed to fetch agent ID:", error);
+  //     }
+  //   };
+  //   fetchUserId();
+  // }, []);
+  const agentId = params.id; 
 
   const [inventorySummary, setInventorySummary] = useState({ totalStock: 0, distinctItems: 0 });
   const [ordersSummary, setOrdersSummary] = useState({ pendingOrders: 0, totalOrders: 0 });
@@ -52,14 +70,52 @@ const AgentHomeScreen = () => {
       setRefreshing(false);
       setLoading(false);
     }
-  }, []);
+  }, []); 
 
   useEffect(() => {
     fetchAgentSummaries();
-  }, [fetchAgentSummaries]);
+
+    // Socket.IO setup for real-time updates
+    const socket = io(SOCKET_SERVER_URL, {
+      transports: ['websocket'], 
+    });
+
+    socket.on('connect', () => {
+      console.log('🔗 Socket.IO connected from AgentHomeScreen');
+      if (agentId) {
+        socket.emit('join_room', agentId); // Join the room with agent's ID
+        console.log(`Socket.IO AgentHomeScreen joined room: ${agentId}`);
+      }
+    });
+
+    socket.on('new_notification', (notification) => {
+      console.log('🔔 New notification received in AgentHomeScreen:', notification);
+      if (agentId && notification.recipientId === agentId && notification.type === 'purchase_status_update') {
+        console.log('Relevant notification received, re-fetching agent summaries...');
+        fetchAgentSummaries(); // Re-fetch data to update the UI
+      } else {
+        console.log('Notification not for this agent or not a relevant type.');
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Socket.IO disconnected from AgentHomeScreen');
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket.IO connection error in AgentHomeScreen:', err.message);
+      // You might want to show an alert to the user or retry connection
+    });
+
+    // Clean up socket connection on component unmount
+    return () => {
+      console.log('AgentHomeScreen unmounting, disconnecting socket...');
+      socket.disconnect();
+    };
+  }, [fetchAgentSummaries, agentId]); // Dependencies: re-run if fetchAgentSummaries or agentId changes
 
   return (
-    <SafeAreaView style={globalStyles.container}>
+    <SafeAreaView style={localStyles.safeArea}>
       {/* Top Header Bar for "Agent Overview" */}
       <View style={localStyles.appHeader}>
         <Text style={localStyles.appTitle}>Agent Overview</Text>
@@ -76,18 +132,25 @@ const AgentHomeScreen = () => {
             {/* Main Section Header */}
             <View style={localStyles.sectionHeaderContainer}>
               <Text style={localStyles.greetingText}>Quick Overview for {String(userName)}</Text>
-              {/* No notification icon here as per original AgentHomeScreen */}
+              {/* Optional: Notification Icon - uncomment and implement unreadNotifications state if needed */}
+              {/*
+              <TouchableOpacity style={localStyles.notificationIconWrapper}>
+                <Ionicons name="notifications-outline" size={24} color={COLORS.textDark} />
+                {unreadNotifications > 0 && <View style={localStyles.notificationBadge} />}
+              </TouchableOpacity>
+              */}
             </View>
 
+            {/* Summary Cards */}
             <InfoCard
-              icon="cube-outline"
+              icon="cube-outline" // Correct icon name for inventory
               title="Slaughterhouse Inventory"
               value={`${String(inventorySummary.totalStock)} kg`}
               subtitle={`Across ${String(inventorySummary.distinctItems)} unique meat types`}
             />
 
             <InfoCard
-              icon="receipt-outline"
+              icon="receipt-outline" // Correct icon name for orders
               title="Butcher Orders Received"
               value={`${String(ordersSummary.pendingOrders)} Pending`}
               subtitle={`Total: ${String(ordersSummary.totalOrders)} orders`}
@@ -101,19 +164,23 @@ const AgentHomeScreen = () => {
 };
 
 const localStyles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background, // Ensure background color is set
+  },
   // Adjusted scroll content to allow full horizontal padding from overviewContainer
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 0, 
+    paddingTop: 0,
   },
   // Main container for all content below the fixed header
   overviewContainer: {
-    paddingHorizontal: 20, 
-    paddingVertical: 15, 
+    paddingHorizontal: 20,
+    paddingVertical: 15,
   },
   // New style for the fixed top header (Agent Overview text)
   appHeader: {
-    height: 60, 
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -124,24 +191,43 @@ const localStyles = StyleSheet.create({
   },
   appTitle: {
     fontSize: 22,
-    fontWeight: '600', 
+    fontWeight: '600',
     color: COLORS.textDark,
   },
   // Container for "Quick Overview..." text
   sectionHeaderContainer: {
-    flexDirection: 'row', 
-    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'flex-start', // Align to start for text and optional icon
     alignItems: 'center',
     marginBottom: 20,
-    marginTop: 15, 
+    marginTop: 15,
   },
   greetingText: {
-    fontSize: 18, 
-    fontWeight: '500', 
-    color: COLORS.textLight, 
+    fontSize: 18,
+    fontWeight: '500',
+    color: COLORS.textLight,
+    flexShrink: 1, // Allows text to wrap
+    marginRight: 10, // Space between text and icon
   },
   loadingIndicator: {
     marginTop: 50,
+  },
+  // Styles for optional notification icon
+  notificationIconWrapper: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    backgroundColor: COLORS.danger,
+    borderRadius: 5,
+    width: 10,
+    height: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
   },
 });
 

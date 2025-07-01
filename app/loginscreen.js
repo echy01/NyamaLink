@@ -13,11 +13,11 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  StatusBar, // Import StatusBar
+  StatusBar,
 } from "react-native";
 
-import COLORS from './styles/colors'; // Ensure this path is correct
-import api from './api'; // Ensure this path is correct
+import COLORS from './styles/colors';
+import api from './api'; 
 
 const { width } = Dimensions.get("window");
 
@@ -35,31 +35,38 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      // Use your existing api.login endpoint
       const response = await api.login({ email, password });
 
       const { token, user } = response.data;
 
+      // Store the main token and user object
       await AsyncStorage.setItem("token", token);
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
       Alert.alert("Login Successful", `Welcome ${user.name || 'Back'}!`);
 
-      router.replace({
-        pathname: "/dashboard",
-        params: { role: user.role, name: user.name },
-      });
-
-      } catch (error) {
-        console.error("Login error:", error.response?.data || error.message);
-        Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials. Please try again.");
-      } finally {
-        setLoading(false); // Hide loading indicator
+      // MODIFIED: Role-based redirection
+      if (user.role === 'admin') {
+        router.replace("/admin/AdminDashboardScreen"); // Redirect to admin dashboard
+      } else {
+        router.replace({
+          pathname: "/dashboard", // Your existing dashboard for other roles
+          params: { role: user.role, name: user.name },
+        });
       }
-    };
+
+    } catch (error) {
+      console.error("Login error:", error.response?.data || error.message);
+      Alert.alert("Login Failed", error.response?.data?.message || "Invalid credentials. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <LinearGradient
-      colors={[COLORS.primaryRed, COLORS.darkRed]} // Using our new red gradient
+      colors={[COLORS.primaryRed, COLORS.darkRed]}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
     width: "90%",
     maxWidth: 400,
     padding: 25,
-    backgroundColor: COLORS.white, // White card background
+    backgroundColor: COLORS.white,
     borderRadius: 15,
     alignItems: "center",
     shadowColor: COLORS.shadow,
@@ -151,7 +158,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.darkGrey,
     marginBottom: 10,
-    fontFamily: ' serif', // Example: Use a modern serif font if available, or a clean sans-serif
+    fontFamily: ' serif',
   },
   subtitle: {
     fontSize: 16,
@@ -165,7 +172,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.offWhite, // Very light background for input fields
+    backgroundColor: COLORS.offWhite,
     borderRadius: 10,
     marginBottom: 15,
     paddingHorizontal: 15,
@@ -180,25 +187,24 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.darkGrey,
     fontSize: 16,
-    // Remove background from individual input to avoid double background
   },
   forgotPassword: {
     alignSelf: "flex-end",
     marginBottom: 20,
   },
   forgotPasswordText: {
-    color: COLORS.primaryRed, // Use primary red for links
+    color: COLORS.primaryRed,
     fontSize: 14,
     fontWeight: "600",
   },
   loginButton: {
-    backgroundColor: COLORS.primaryRed, // Use primary red for main action button
+    backgroundColor: COLORS.primaryRed,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
-    height: 55, // Consistent height with input fields
+    height: 55,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -220,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   signUpLink: {
-    color: COLORS.primaryRed, // Use primary red for links
+    color: COLORS.primaryRed,
     fontSize: 15,
     fontWeight: "bold",
   },

@@ -18,8 +18,9 @@ import globalStyles from '../styles/globalStyles';
 import InfoCard from '../../components/InfoCard';    
 import api from '../api';                         
 import COLORS from '../styles/colors';           
+import { useLocalSearchParams } from 'expo-router'; 
 
-
+// Import your meat images
 import beef from '../../assets/images/beef.png';
 import goat from '../../assets/images/goat.png';
 import chicken from '../../assets/images/chicken.png';
@@ -38,21 +39,23 @@ const meatImages = {
 };
 
 const ButcherInventoryScreen = () => {
+  const params = useLocalSearchParams(); 
+  const userName = params.name || 'Butcher User'; 
+
   const [inventory, setInventory] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Inventory Management Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItem, setNewItem] = useState({ meatType: '', price: '', stock: '' });
   const [showUpdateItemModal, setShowUpdateItemModal] = useState(false);
-  const [currentItem, setCurrentItem] = useState(null); 
+  const [currentItem, setCurrentItem] = useState(null);
 
   const fetchAll = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
     try {
-      const invRes = await api.getButcherInventory();
+      const invRes = await api.getButcherInventory(); 
       setInventory(Array.isArray(invRes.data?.inventory) ? invRes.data.inventory : []);
     } catch (err) {
       console.error('❌ Butcher Inventory Load Error:', err.response?.data || err.message);
@@ -96,11 +99,11 @@ const ButcherInventoryScreen = () => {
         meatType: currentItem.meatType,
         price: parseFloat(currentItem.price),
         stock: parseFloat(currentItem.stock),
-        isPublic: true, 
+        // isPublic is handled on backend if it's part of the update logic
       });
-      setShowUpdateItemModal(false);
-      setCurrentItem(null);
-      fetchAll(); 
+      setShowUpdateItemModal(false); // Close modal
+      setCurrentItem(null); // Clear current item
+      fetchAll(); // Refresh list
       Alert.alert('Success', 'Inventory item updated successfully!');
     } catch (err) {
       Alert.alert('Update Item Error', err.response?.data?.message || err.message || 'Could not update item.');
@@ -108,6 +111,7 @@ const ButcherInventoryScreen = () => {
     }
   };
 
+  // Helper to get image based on meat type
   const getMeatImage = (meatType) => {
     const lowerMeatType = (meatType || '').toLowerCase();
     if (meatImages[lowerMeatType]) {
@@ -116,87 +120,119 @@ const ButcherInventoryScreen = () => {
     return meatImages.default;
   };
 
+  const renderInventoryItem = ({ item }) => (
+    <InfoCard
+      title={item.meatType}
+      value={`${Number(item.stock).toFixed(2)} Kg`}
+      subtitle={`Ksh ${Number(item.price).toFixed(2)}/Kg`}
+      imageSource={getMeatImage(item.meatType)}
+      onPress={() => {
+        setCurrentItem({ 
+          _id: item._id, 
+          meatType: item.meatType, 
+          price: String(item.price), // Convert to string for TextInput
+          stock: String(item.stock) // Convert to string for TextInput
+        });
+        setShowUpdateItemModal(true);
+      }}
+      // You can add more props to InfoCard if it supports them, e.g., for actions
+      cardStyle={localStyles.inventoryCard}
+    >
+      {/* Optional: Add buttons for direct edit/delete if InfoCard can contain children */}
+      <View style={localStyles.cardActions}>
+        <TouchableOpacity 
+          style={[localStyles.smallActionButton, { backgroundColor: COLORS.primary }]} 
+          onPress={() => {
+            setCurrentItem({ 
+              _id: item._id, 
+              meatType: item.meatType, 
+              price: String(item.price), 
+              stock: String(item.stock) 
+            });
+            setShowUpdateItemModal(true);
+          }}
+        >
+          <Text style={globalStyles.buttonText}>Edit</Text>
+        </TouchableOpacity>
+        {/* You could add a delete button here, requiring a handleDeleteItem function */}
+      </View>
+    </InfoCard>
+  );
+
   return (
     <SafeAreaView style={globalStyles.container}>
+      <View style={globalStyles.header}>
+        <Text style={globalStyles.headerTitle}>My Inventory</Text>
+      </View>
       <View style={localStyles.contentContainer}>
-        <TouchableOpacity style={globalStyles.button} onPress={() => setShowAddModal(true)}>
-          <Ionicons name="add-circle-outline" size={20} color="#fff" />
-          <Text style={globalStyles.buttonText}>Add New Item</Text>
-        </TouchableOpacity>
         {loading && !refreshing ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
         ) : (
           <FlatList
             data={inventory}
-            renderItem={({ item }) => {
-              if (!item || !item._id) {
-                console.warn("Skipping malformed inventory item:", item);
-                return null;
-              }
-              return (
-                <InfoCard
-                  title={String(item.meatType)}
-                  value={`Stock: ${item.stock ?? 'N/A'}kg @ KES ${item.price ?? 'N/A'}/kg`}
-                  subtitle={`Butchery: ${String(item.slaughterhouseName)}`} 
-                  imageSource={getMeatImage(item.meatType)}
-                >
-                  <View style={localStyles.cardActions}>
-                    <TouchableOpacity
-                      style={[globalStyles.buttonOutline, localStyles.smallActionButton]}
-                      onPress={() => {
-                        setCurrentItem({
-                            _id: item._id,
-                            meatType: String(item.meatType),
-                            price: String(item.pricePerKg),
-                            stock: String(item.quantity) 
-                        });
-                        setShowUpdateItemModal(true);
-                      }}
-                    >
-                      <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-                      <Text style={globalStyles.buttonOutlineText}>Edit</Text>
-                    </TouchableOpacity>
-                  </View>
-                </InfoCard>
-              );
-            }}
-            keyExtractor={(item) => item._id ? String(item._id) : Math.random().toString()}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAll} />}
-            ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No inventory items found.</Text>}
+            keyExtractor={(item) => item._id}
+            renderItem={renderInventoryItem}
+            contentContainerStyle={globalStyles.flatListContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={fetchAll} />
+            }
+            ListEmptyComponent={
+              <Text style={globalStyles.emptyListText}>No inventory items found. Add some!</Text>
+            }
           />
         )}
+
+        <TouchableOpacity 
+          style={globalStyles.button} 
+          onPress={() => setShowAddModal(true)}
+        >
+          <Ionicons name="add-circle-outline" size={20} color={COLORS.white} style={{ marginRight: 10 }} />
+          <Text style={globalStyles.buttonText}>Add New Meat</Text>
+        </TouchableOpacity>
+
       </View>
 
-      {/* Add Item Modal */}
-      <Modal visible={showAddModal} animationType="slide" transparent={true}>
+      {/* Add New Item Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showAddModal}
+        onRequestClose={() => setShowAddModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
             <Text style={localStyles.modalTitle}>Add New Inventory Item</Text>
             <TextInput
               style={globalStyles.input}
-              placeholder="Meat Type (e.g., Beef, Goat, Chicken, Pork, Lamb)"
+              placeholder="Meat Type (e.g., Beef, Goat)"
               value={newItem.meatType}
               onChangeText={(text) => setNewItem({ ...newItem, meatType: text })}
             />
             <TextInput
               style={globalStyles.input}
-              placeholder="Price per Kg (KES)"
-              keyboardType="numeric"
-              value={String(newItem.price)}
+              placeholder="Price per Kg (e.g., 450)"
+              value={newItem.price}
               onChangeText={(text) => setNewItem({ ...newItem, price: text })}
+              keyboardType="numeric"
             />
             <TextInput
               style={globalStyles.input}
-              placeholder="Stock (Kg)"
-              keyboardType="numeric"
-              value={String(newItem.stock)}
+              placeholder="Stock Quantity in Kg (e.g., 100)"
+              value={newItem.stock}
               onChangeText={(text) => setNewItem({ ...newItem, stock: text })}
+              keyboardType="numeric"
             />
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowAddModal(false)}>
-                <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
+              <TouchableOpacity
+                style={[globalStyles.button, globalStyles.cancelButton]}
+                onPress={() => setShowAddModal(false)}
+              >
+                <Text style={globalStyles.buttonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handleAddItem}>
+              <TouchableOpacity
+                style={[globalStyles.button, globalStyles.confirmButton]}
+                onPress={handleAddItem}
+              >
                 <Text style={globalStyles.buttonText}>Add Item</Text>
               </TouchableOpacity>
             </View>
@@ -205,7 +241,12 @@ const ButcherInventoryScreen = () => {
       </Modal>
 
       {/* Update Item Modal */}
-      <Modal visible={showUpdateItemModal} animationType="slide" transparent={true}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showUpdateItemModal}
+        onRequestClose={() => setShowUpdateItemModal(false)}
+      >
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContent}>
             <Text style={localStyles.modalTitle}>Update Inventory Item</Text>
@@ -214,36 +255,43 @@ const ButcherInventoryScreen = () => {
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Meat Type"
-                  value={String(currentItem.meatType)}
+                  value={currentItem.meatType}
                   onChangeText={(text) => setCurrentItem({ ...currentItem, meatType: text })}
                 />
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Price per Kg"
-                  keyboardType="numeric"
-                  value={String(currentItem.price)}
+                  value={currentItem.price}
                   onChangeText={(text) => setCurrentItem({ ...currentItem, price: text })}
+                  keyboardType="numeric"
                 />
                 <TextInput
                   style={globalStyles.input}
-                  placeholder="Stock (Kg)"
-                  keyboardType="numeric"
-                  value={String(currentItem.stock)}
+                  placeholder="Stock Quantity in Kg"
+                  value={currentItem.stock}
                   onChangeText={(text) => setCurrentItem({ ...currentItem, stock: text })}
+                  keyboardType="numeric"
                 />
               </>
             )}
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity style={[globalStyles.buttonOutline, localStyles.modalButton]} onPress={() => setShowUpdateItemModal(false)}>
-                <Text style={globalStyles.buttonOutlineText}>Cancel</Text>
+              <TouchableOpacity
+                style={[globalStyles.button, globalStyles.cancelButton]}
+                onPress={() => setShowUpdateItemModal(false)}
+              >
+                <Text style={globalStyles.buttonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[globalStyles.button, localStyles.modalButton]} onPress={handleUpdateItem}>
+              <TouchableOpacity
+                style={[globalStyles.button, globalStyles.confirmButton]}
+                onPress={handleUpdateItem}
+              >
                 <Text style={globalStyles.buttonText}>Update Item</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
     </SafeAreaView>
   );
 };
@@ -295,21 +343,15 @@ const localStyles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  modalSubtitle: {
-    fontSize: 16,
-    color: COLORS.textLight,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 20,
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
+  // Added style for the InfoCard specific to inventory
+  inventoryCard: {
+    marginBottom: 10, // Add some space between cards
+  }
 });
 
 export default ButcherInventoryScreen;

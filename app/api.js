@@ -28,6 +28,9 @@ const api = {
   resetPassword: ({ email, code, newPassword }) =>
     instance.post("/auth/resetpassword", { email, code, newPassword }),
 
+  getAdminUsers: () => instance.get('/admin/users'),
+  getAdminOrders: () => instance.get('/admin/orders'),
+
   // 🔑 OTP
   sendOtp: ({ phoneNumber }) => instance.post("/otp/send", { phoneNumber }),
   verifyOtp: ({ phoneNumber, code }) =>
@@ -114,8 +117,12 @@ const api = {
 
   // 👤 Customer Endpoints
   getAvailableMeatForCustomers: () => instance.get("/customer/available-meat"),
-  placeCustomerOrder: ({meatId, quantity, deliveryLocation}) =>
-    instance.post("/customer/place-order", { meatId, quantity, deliveryLocation }),
+  placeCustomerOrder: ({ meatId, quantity, deliveryLocation }) =>
+    instance.post("/customer/place-order", {
+      meatId,
+      quantity,
+      deliveryLocation,
+    }),
   getMyCustomerOrders: () => instance.get("/customer/my-orders"),
   updateMyCustomerOrderStatus: (orderId, status, deliveryConfirmation = {}) =>
     instance.put(`/customer/my-orders/${orderId}/status`, {
@@ -127,8 +134,7 @@ const api = {
   getInventoryByButcherId: (butcherId) =>
     instance.get(`/customer/butcher-inventory/${butcherId}`),
   updateCustomerLocation: ({ lat, lng }) =>
-  instance.put('/customer/profile/location', { lat, lng }),
-
+    instance.put("/customer/profile/location", { lat, lng }),
 
   // 💳 Payment Endpoints
   initializePayment: (payload) => instance.post(`/payment/initialize`, payload),
