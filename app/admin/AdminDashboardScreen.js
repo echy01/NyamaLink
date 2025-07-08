@@ -1,5 +1,3 @@
-// app/admin/AdminDashboardScreen.js
-
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,

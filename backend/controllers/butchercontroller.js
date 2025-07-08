@@ -1,8 +1,8 @@
 import asyncHandler from 'express-async-handler';
 import Inventory from '../models/inventory.js';
-import Order from '../models/order.js';       
-import Purchase from '../models/purchase.js'; 
-import User from '../models/User.js';      
+import Order from '../models/order.js';
+import Purchase from '../models/purchase.js';
+import User from '../models/User.js';
 
 export const getInventory = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id || req.user.role !== 'butcher') {
@@ -16,7 +16,7 @@ export const getInventory = asyncHandler(async (req, res) => {
     meatType: item.meatType,
     price: item.pricePerKg,
     stock: item.quantity,
-    slaughterhouseName: item.slaughterhouseName, 
+    slaughterhouseName: item.slaughterhouseName,
   }));
   res.json({ inventory: formattedInventory });
 });
@@ -38,8 +38,8 @@ export const addInventoryItem = asyncHandler(async (req, res) => {
     meatType,
     quantity: parseFloat(stock),
     pricePerKg: parseFloat(price),
-    slaughterhouseName: req.user.name, 
-    isPublic: true, 
+    slaughterhouseName: req.user.name,
+    isPublic: true,
     ownerType: 'butcher',
     ownerId: req.user._id,
   });
@@ -69,7 +69,7 @@ export const updateInventoryItem = asyncHandler(async (req, res) => {
 
   const updatedItem = await Inventory.findOneAndUpdate(
     { _id: itemId, ownerType: 'butcher', ownerId: req.user._id },
-    { $set: updates, updatedAt: Date.now() }, 
+    { $set: updates, updatedAt: Date.now() },
     { new: true, runValidators: true }
   );
 
@@ -97,7 +97,7 @@ export const updateInventoryStock = asyncHandler(async (req, res) => {
 
   const updatedItem = await Inventory.findOneAndUpdate(
     { _id: itemId, ownerType: 'butcher', ownerId: req.user._id },
-    { $set: { quantity: parseFloat(stock), updatedAt: Date.now() } }, 
+    { $set: { quantity: parseFloat(stock), updatedAt: Date.now() } },
     { new: true }
   );
 
@@ -119,7 +119,7 @@ export const getCustomerOrdersForButcher = asyncHandler(async (req, res) => {
     .populate({
       path: 'customerId',
       model: 'User',
-      select: 'name email'
+      select: 'name email phoneNumber'
     })
     .populate({
       path: 'meatId',
@@ -133,6 +133,7 @@ export const getCustomerOrdersForButcher = asyncHandler(async (req, res) => {
     customerId: order.customerId?._id,
     customerName: order.customerId?.name || 'Unknown Customer',
     customerEmail: order.customerId?.email || 'N/A',
+    customerphoneNumber: order.customerId?.phoneNumber || 'N/A',
     butcherId: order.butcherId,
     butcheryName: order.butcheryName,
     meatId: order.meatId?._id,
@@ -141,9 +142,9 @@ export const getCustomerOrdersForButcher = asyncHandler(async (req, res) => {
     quantity: order.quantity,
     totalPrice: order.totalPrice,
     status: order.status,
-    dispatchDetails: order.dispatchDetails, 
-    paymentStatus: order.paymentStatus,     
-    deliveryConfirmation: order.deliveryConfirmation, 
+    dispatchDetails: order.dispatchDetails,
+    paymentStatus: order.paymentStatus,
+    deliveryConfirmation: order.deliveryConfirmation,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     deliveryLocation: order.deliveryLocation,
@@ -154,7 +155,7 @@ export const getCustomerOrdersForButcher = asyncHandler(async (req, res) => {
 
 export const updateCustomerOrderStatus = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const { status, dispatchDetails, deliveryConfirmation } = req.body; 
+  const { status, dispatchDetails, deliveryConfirmation } = req.body;
 
   if (!status) {
     res.status(400);
@@ -172,55 +173,57 @@ export const updateCustomerOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Not authorized, user is not a butcher or ID not found');
   }
 
+  const order = await Order.findById(orderId).populate('customerId', 'name phoneNumber');
+
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  if (order.butcherId.toString() !== req.user._id.toString()) {
+    res.status(401);
+    throw new Error('Not authorized to update this order');
+  }
+
   const updateFields = { status, updatedAt: Date.now() };
 
   if (dispatchDetails) {
-    updateFields.dispatchDetails = { ...dispatchDetails, dispatchDate: new Date() }; 
+    updateFields.dispatchDetails = { ...dispatchDetails, dispatchDate: new Date() };
   }
   if (deliveryConfirmation) {
-    updateFields.deliveryConfirmation = { ...deliveryConfirmation, receivedDate: new Date() }; 
+    updateFields.deliveryConfirmation = { ...deliveryConfirmation, receivedDate: new Date() };
   }
 
   const updatedOrder = await Order.findOneAndUpdate(
     { _id: orderId, butcherId: req.user._id },
     { $set: updateFields },
-    { new: true, runValidators: true } 
-  );
+    { new: true, runValidators: true }
+  ).populate('customerId', 'name phoneNumber');
 
   if (!updatedOrder) {
     res.status(404);
     throw new Error('Order not found or unauthorized');
   }
 
-    // ✅ Send SMS when order has arrived
-  if (status === 'arrived') {
-    const sms = req.app.get('africasTalkingSms'); 
+  if (status === 'arrived' && updatedOrder.customerId && updatedOrder.customerId.phoneNumber) {
+    const sms = req.app.get('africasTalkingSms');
+    const message = `Hi ${updatedOrder.customerId.name || 'Customer'}, your order ${updatedOrder._id} from NyamaLink has arrived! You ordered ${updatedOrder.quantity}kg of ${updatedOrder.meatType} from ${updatedOrder.butcheryName}.Thank you for choosing NyamaLink!`;
 
-    // Fetch customer details to get the phone number
-    const customer = await User.findById(updatedOrder.customerId);
-    const customerPhone = customer?.phone; // Assuming 'phone' field exists on User model
-
-    if (customerPhone) {
-      const message = `Hi ${updatedOrder.customerName || 'Customer'}, your order ${updatedOrder._id} has arrived! 🍖`;
-
-      try {
-        await sms.send({
-          to: [customerPhone],
-          message,
-        });
-        console.log(`📤 SMS sent to ${customerPhone}`);
-      } catch (smsError) {
-        console.error('❌ Failed to send SMS:', smsError);
-      }
-    } else {
-      console.warn(`⚠️ Customer phone number not found for order ${updatedOrder._id}, SMS not sent.`);
+    try {
+      await sms.send({
+        to: [updatedOrder.customerId.phoneNumber],
+        message,
+      });
+    } catch (err) {
+      console.error('Failed to send SMS:', err);
     }
+  } else {
+    console.warn(`Customer phoneNumber number not found for order ${updatedOrder._id}, SMS not sent.`);
   }
 
-  // ✅ Emit Socket.IO Notification
   const io = req.app.get('io');
   io.emit('new_notification', {
-    title: '📦 Order Status Update',
+    title: 'Order Status Update',
     message: `Order for ${updatedOrder.meatType} is now '${updatedOrder.status}'`,
     timestamp: new Date(),
     type: 'order_status_update',
@@ -240,12 +243,12 @@ export const getSlaughterhouseOrders = asyncHandler(async (req, res) => {
     buyerType: 'butcher',
     buyerId: req.user._id,
   })
-  .populate({
-    path: 'meatId',
-    model: 'Inventory',
-    select: 'meatType slaughterhouseName'
-  })
-  .sort({ createdAt: -1 });
+    .populate({
+      path: 'meatId',
+      model: 'Inventory',
+      select: 'meatType slaughterhouseName'
+    })
+    .sort({ createdAt: -1 });
 
   const formattedOrders = orders.map(order => ({
     _id: order._id,
@@ -259,8 +262,8 @@ export const getSlaughterhouseOrders = asyncHandler(async (req, res) => {
     status: order.status,
     slaughterhouseName: order.meatId?.slaughterhouseName || order.slaughterhouseName || 'N/A',
     dispatchDetails: order.dispatchDetails,
-    paymentStatus: order.paymentStatus,    
-    deliveryConfirmation: order.deliveryConfirmation, 
+    paymentStatus: order.paymentStatus,
+    deliveryConfirmation: order.deliveryConfirmation,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   }));
@@ -314,19 +317,17 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
 
   await newPurchase.save();
 
-  // ✅ Deduct quantity from the agent's (slaughterhouse) inventory
   meatToPurchase.quantity -= quantity;
   await meatToPurchase.save();
 
-  // ✅ Emit Socket.IO Notification to the selling agent
   const io = req.app.get('io');
   io.emit('new_notification', {
-    title: '🔁 New Butcher Order Received',
+    title: 'New Butcher Order Received',
     message: `${req.user.name || 'A butcher'} placed an order for ${quantity}kg of ${meatToPurchase.meatType} from your inventory.`,
     timestamp: new Date(),
-    type: 'purchase_status_update', // Or a more specific type like 'agent_inventory_update'
+    type: 'purchase_status_update',
     read: false,
-    recipientId: meatToPurchase.ownerId // Target the agent whose inventory was affected
+    recipientId: meatToPurchase.ownerId
   });
 
   res.status(201).json({ message: 'Purchase order to slaughterhouse placed successfully!', order: newPurchase });
@@ -334,7 +335,7 @@ export const orderFromSlaughterhouse = asyncHandler(async (req, res) => {
 
 export const updateSlaughterhouseOrderStatus = asyncHandler(async (req, res) => {
   const { purchaseId } = req.params;
-  const { status, dispatchDetails, deliveryConfirmation } = req.body; 
+  const { status, dispatchDetails, deliveryConfirmation } = req.body;
   if (!status) {
     res.status(400);
     throw new Error('Purchase order status is required');
@@ -361,7 +362,7 @@ export const updateSlaughterhouseOrderStatus = asyncHandler(async (req, res) => 
   }
 
   const updatedPurchase = await Purchase.findOneAndUpdate(
-    { _id: purchaseId, buyerType: 'butcher', buyerId: req.user._id }, 
+    { _id: purchaseId, buyerType: 'butcher', buyerId: req.user._id },
     { $set: updateFields },
     { new: true, runValidators: true }
   );
@@ -371,11 +372,9 @@ export const updateSlaughterhouseOrderStatus = asyncHandler(async (req, res) => 
     throw new Error('Purchase order not found or unauthorized');
   }
 
-
-  // ✅ Emit Socket.IO Notification
   const io = req.app.get('io');
   io.emit('new_notification', {
-    title: '🚚 Slaughterhouse Dispatch',
+    title: 'Slaughterhouse Dispatch',
     message: `Purchase order for ${updatedPurchase.meatType} is now '${updatedPurchase.status}'`,
     timestamp: new Date(),
     type: 'purchase_status_update',
@@ -429,6 +428,7 @@ export const getNearbyButchers = asyncHandler(async (req, res) => {
 
   res.status(200).json({ nearbyButchers });
 });
+
 export const placeCustomerOrder = asyncHandler(async (req, res) => {
   const { meatId, quantity, deliveryLocation } = req.body;
 
@@ -473,19 +473,17 @@ export const placeCustomerOrder = asyncHandler(async (req, res) => {
 
   await newOrder.save();
 
-  // ✅ Deduct quantity from the butcher's inventory
   meat.quantity -= quantity;
   await meat.save();
 
-  // ✅ Emit Socket.IO Notification to the butcher
   const io = req.app.get('io');
   io.emit('new_notification', {
-    title: '🛒 New Customer Order',
+    title: 'New Customer Order',
     message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meat.meatType} from your inventory.`,
     timestamp: new Date(),
     type: 'order_status_update',
     read: false,
-    recipientId: meat.ownerId 
+    recipientId: meat.ownerId
   });
 
   res.status(201).json({ message: 'Order placed successfully', order: newOrder });

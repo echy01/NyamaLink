@@ -1,45 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  RefreshControl,
-  StyleSheet,
   ActivityIndicator,
-  ScrollView,
   Alert,
-  TouchableOpacity // Added for notification icon if desired
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles';
-import InfoCard from '../../components/InfoCard';
-import api from '../api';
-import COLORS from '../styles/colors';
-import { useLocalSearchParams } from 'expo-router';
-import io from 'socket.io-client'; // Import socket.io-client
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import io from "socket.io-client";
+import InfoCard from "../../components/InfoCard";
+import api from "../api";
+import COLORS from "../styles/colors";
 
-
-const SOCKET_SERVER_URL = 'http://192.168.1.3:5000'; 
+const SOCKET_SERVER_URL = "http://192.168.180.19:5000";
 
 const AgentHomeScreen = () => {
   const params = useLocalSearchParams();
-  const userName = params.name || 'Slaughterhouse Agent';
-  // const [agentId, setAgentId] = useState(null);
-  // useEffect(() => {
-  //   const fetchUserId = async () => {
-  //     try {
-  //       const userProfile = await api.getProfile(); // Assuming an API endpoint to get current user's profile
-  //       setAgentId(userProfile.data._id);
-  //     } catch (error) {
-  //       console.error("Failed to fetch agent ID:", error);
-  //     }
-  //   };
-  //   fetchUserId();
-  // }, []);
-  const agentId = params.id; 
+  const userName = params.name || "Slaughterhouse Agent";
 
-  const [inventorySummary, setInventorySummary] = useState({ totalStock: 0, distinctItems: 0 });
-  const [ordersSummary, setOrdersSummary] = useState({ pendingOrders: 0, totalOrders: 0 });
+  const agentId = params.id;
+
+  const [inventorySummary, setInventorySummary] = useState({
+    totalStock: 0,
+    distinctItems: 0,
+  });
+  const [ordersSummary, setOrdersSummary] = useState({
+    pendingOrders: 0,
+    totalOrders: 0,
+  });
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,7 +41,10 @@ const AgentHomeScreen = () => {
     try {
       const invRes = await api.getSlaughterhouseInventory();
       const currentInventory = Array.isArray(invRes.data) ? invRes.data : [];
-      const totalStock = currentInventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalStock = currentInventory.reduce(
+        (sum, item) => sum + (item.quantity || 0),
+        0
+      );
       setInventorySummary({
         totalStock: totalStock.toFixed(2),
         distinctItems: currentInventory.length,
@@ -59,57 +53,75 @@ const AgentHomeScreen = () => {
       const ordersRes = await api.getButcheryOrders();
       const currentOrders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
       setOrdersSummary({
-        pendingOrders: currentOrders.filter(order => order.status === 'pending' || order.status === 'processing').length,
+        pendingOrders: currentOrders.filter(
+          (order) => order.status === "pending" || order.status === "processing"
+        ).length,
         totalOrders: currentOrders.length,
       });
-
     } catch (err) {
-      console.error('❌ Agent Home Load Error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Failed to load dashboard summaries. Please try again.');
+      console.error(
+        "❌ Agent Home Load Error:",
+        err.response?.data || err.message
+      );
+      Alert.alert(
+        "Error",
+        "Failed to load dashboard summaries. Please try again."
+      );
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
-  }, []); 
+  }, []);
 
   useEffect(() => {
     fetchAgentSummaries();
 
-    // Socket.IO setup for real-time updates
     const socket = io(SOCKET_SERVER_URL, {
-      transports: ['websocket'], 
+      transports: ["websocket"],
     });
 
-    socket.on('connect', () => {
-      console.log('🔗 Socket.IO connected from AgentHomeScreen');
+    socket.on("connect", () => {
+      console.log("🔗 Socket.IO connected from AgentHomeScreen");
       if (agentId) {
-        socket.emit('join_room', agentId); // Join the room with agent's ID
+        socket.emit("join_room", agentId);
         console.log(`Socket.IO AgentHomeScreen joined room: ${agentId}`);
       }
     });
 
-    socket.on('new_notification', (notification) => {
-      console.log('🔔 New notification received in AgentHomeScreen:', notification);
-      if (agentId && notification.recipientId === agentId && notification.type === 'purchase_status_update') {
-        console.log('Relevant notification received, re-fetching agent summaries...');
-        fetchAgentSummaries(); // Re-fetch data to update the UI
+    socket.on("new_notification", (notification) => {
+      console.log(
+        "🔔 New notification received in AgentHomeScreen:",
+        notification
+      );
+      if (
+        agentId &&
+        notification.recipientId === agentId &&
+        notification.type === "purchase_status_update"
+      ) {
+        console.log(
+          "Relevant notification received, re-fetching agent summaries..."
+        );
+        fetchAgentSummaries();
       } else {
-        console.log('Notification not for this agent or not a relevant type.');
+        console.log("Notification not for this agent or not a relevant type.");
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('🔌 Socket.IO disconnected from AgentHomeScreen');
+    socket.on("disconnect", () => {
+      console.log("🔌 Socket.IO disconnected from AgentHomeScreen");
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('❌ Socket.IO connection error in AgentHomeScreen:', err.message);
+    socket.on("connect_error", (err) => {
+      console.error(
+        "❌ Socket.IO connection error in AgentHomeScreen:",
+        err.message
+      );
       // You might want to show an alert to the user or retry connection
     });
 
     // Clean up socket connection on component unmount
     return () => {
-      console.log('AgentHomeScreen unmounting, disconnecting socket...');
+      console.log("AgentHomeScreen unmounting, disconnecting socket...");
       socket.disconnect();
     };
   }, [fetchAgentSummaries, agentId]); // Dependencies: re-run if fetchAgentSummaries or agentId changes
@@ -123,22 +135,26 @@ const AgentHomeScreen = () => {
 
       <ScrollView
         contentContainerStyle={localStyles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAgentSummaries} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchAgentSummaries}
+          />
+        }
       >
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={localStyles.loadingIndicator}
+          />
         ) : (
           <View style={localStyles.overviewContainer}>
             {/* Main Section Header */}
             <View style={localStyles.sectionHeaderContainer}>
-              <Text style={localStyles.greetingText}>Quick Overview for {String(userName)}</Text>
-              {/* Optional: Notification Icon - uncomment and implement unreadNotifications state if needed */}
-              {/*
-              <TouchableOpacity style={localStyles.notificationIconWrapper}>
-                <Ionicons name="notifications-outline" size={24} color={COLORS.textDark} />
-                {unreadNotifications > 0 && <View style={localStyles.notificationBadge} />}
-              </TouchableOpacity>
-              */}
+              <Text style={localStyles.greetingText}>
+                Quick Overview for {String(userName)}
+              </Text>
             </View>
 
             {/* Summary Cards */}
@@ -146,7 +162,9 @@ const AgentHomeScreen = () => {
               icon="cube-outline" // Correct icon name for inventory
               title="Slaughterhouse Inventory"
               value={`${String(inventorySummary.totalStock)} kg`}
-              subtitle={`Across ${String(inventorySummary.distinctItems)} unique meat types`}
+              subtitle={`Across ${String(
+                inventorySummary.distinctItems
+              )} unique meat types`}
             />
 
             <InfoCard
@@ -166,14 +184,14 @@ const AgentHomeScreen = () => {
 const localStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background, // Ensure background color is set
+    backgroundColor: COLORS.background,
   },
-  // Adjusted scroll content to allow full horizontal padding from overviewContainer
+
   scrollContent: {
     flexGrow: 1,
     paddingTop: 0,
   },
-  // Main container for all content below the fixed header
+
   overviewContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -181,8 +199,8 @@ const localStyles = StyleSheet.create({
   // New style for the fixed top header (Agent Overview text)
   appHeader: {
     height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.lightGrey,
     backgroundColor: COLORS.white, // Or a very light background color
@@ -191,20 +209,20 @@ const localStyles = StyleSheet.create({
   },
   appTitle: {
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textDark,
   },
   // Container for "Quick Overview..." text
   sectionHeaderContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start', // Align to start for text and optional icon
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-start", // Align to start for text and optional icon
+    alignItems: "center",
     marginBottom: 20,
     marginTop: 15,
   },
   greetingText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.textLight,
     flexShrink: 1, // Allows text to wrap
     marginRight: 10, // Space between text and icon
@@ -219,7 +237,7 @@ const localStyles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     right: 5,
     top: 5,
     backgroundColor: COLORS.danger,

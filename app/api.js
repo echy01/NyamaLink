@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.1.3:5000/api";
+const API_BASE_URL = "http://192.168.180.19:5000/api";
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -28,8 +28,8 @@ const api = {
   resetPassword: ({ email, code, newPassword }) =>
     instance.post("/auth/resetpassword", { email, code, newPassword }),
 
-  getAdminUsers: () => instance.get('/admin/users'),
-  getAdminOrders: () => instance.get('/admin/orders'),
+  getAdminUsers: () => instance.get("/admin/users"),
+  getAdminOrders: () => instance.get("/admin/orders"),
 
   // 🔑 OTP
   sendOtp: ({ phoneNumber }) => instance.post("/otp/send", { phoneNumber }),

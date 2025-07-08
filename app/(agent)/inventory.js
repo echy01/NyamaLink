@@ -1,32 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
   FlatList,
-  TouchableOpacity,
+  Modal,
   RefreshControl,
   StyleSheet,
-  Modal,
+  Text,
   TextInput,
-  Alert,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import globalStyles from '../styles/globalStyles';
-import InfoCard from '../../components/InfoCard';
-import api from '../api';
-import COLORS from '../styles/colors';
-import { useLocalSearchParams } from 'expo-router';
-import io from 'socket.io-client'; // Import socket.io-client
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import io from "socket.io-client"; // Import socket.io-client
+import InfoCard from "../../components/InfoCard";
+import api from "../api";
+import COLORS from "../styles/colors";
+import globalStyles from "../styles/globalStyles";
 
-import beef from '../../assets/images/beef.png';
-import goat from '../../assets/images/goat.png';
-import chicken from '../../assets/images/chicken.png';
-import pork from '../../assets/images/pork.png';
-import lamb from '../../assets/images/lamb.png';
-import meatDefault from '../../assets/images/meat_default.jpeg';
+import beef from "../../assets/images/beef.png";
+import chicken from "../../assets/images/chicken.png";
+import goat from "../../assets/images/goat.png";
+import lamb from "../../assets/images/lamb.png";
+import meatDefault from "../../assets/images/meat_default.jpeg";
+import pork from "../../assets/images/pork.png";
 
 const meatImages = {
   beef: beef,
@@ -37,12 +36,11 @@ const meatImages = {
   default: meatDefault,
 };
 
-
-const SOCKET_SERVER_URL = 'http://192.168.1.3:5000'; 
+const SOCKET_SERVER_URL = "http://192.168.180.19:5000";
 
 const AgentInventoryScreen = () => {
   const params = useLocalSearchParams();
-  const userName = params.name || 'Slaughterhouse Agent';
+  const userName = params.name || "Slaughterhouse Agent";
   // You MUST ensure `agentId` is correctly passed or fetched.
   // It should be the MongoDB _id of the logged-in agent.
   // Example if passed from login screen: const agentId = params.userId;
@@ -54,20 +52,22 @@ const AgentInventoryScreen = () => {
 
   const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
   const [newInventoryItem, setNewInventoryItem] = useState({
-    meatType: '',
-    quantity: '',
-    pricePerKg: '',
-    slaughterhouseName: userName || '', // Initialize with userName if available
+    meatType: "",
+    quantity: "",
+    pricePerKg: "",
+    slaughterhouseName: userName || "", // Initialize with userName if available
     isPublic: true, // Default to true or add toggle
   });
 
   // Update slaughterhouseName in newInventoryItem if userName changes
   useEffect(() => {
     if (userName && newInventoryItem.slaughterhouseName !== userName) {
-      setNewInventoryItem(prev => ({ ...prev, slaughterhouseName: userName }));
+      setNewInventoryItem((prev) => ({
+        ...prev,
+        slaughterhouseName: userName,
+      }));
     }
   }, [userName, newInventoryItem.slaughterhouseName]);
-
 
   const fetchInventory = useCallback(async () => {
     setRefreshing(true);
@@ -76,8 +76,11 @@ const AgentInventoryScreen = () => {
       const invRes = await api.getSlaughterhouseInventory();
       setInventory(Array.isArray(invRes.data) ? invRes.data : []);
     } catch (err) {
-      console.error('❌ Agent Inventory Load Error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Failed to load inventory data. Please try again.');
+      console.error(
+        "❌ Agent Inventory Load Error:",
+        err.response?.data || err.message
+      );
+      Alert.alert("Error", "Failed to load inventory data. Please try again.");
     } finally {
       setRefreshing(false);
       setLoading(false);
@@ -89,53 +92,72 @@ const AgentInventoryScreen = () => {
 
     // Socket.IO setup for real-time updates
     const socket = io(SOCKET_SERVER_URL, {
-      transports: ['websocket'], // Prefer websockets
+      transports: ["websocket"], // Prefer websockets
       // query: { userId: agentId }, // Optionally send userId with connection
     });
 
-    socket.on('connect', () => {
-      console.log('🔗 Socket.IO connected from AgentInventoryScreen');
+    socket.on("connect", () => {
+      console.log("🔗 Socket.IO connected from AgentInventoryScreen");
       if (agentId) {
-        socket.emit('join_room', agentId); // Join the room with agent's ID
+        socket.emit("join_room", agentId); // Join the room with agent's ID
         console.log(`Socket.IO AgentInventoryScreen joined room: ${agentId}`);
       }
     });
 
-    socket.on('new_notification', (notification) => {
-      console.log('🔔 New notification received in AgentInventoryScreen:', notification);
+    socket.on("new_notification", (notification) => {
+      console.log(
+        "🔔 New notification received in AgentInventoryScreen:",
+        notification
+      );
       // Check if the notification is for this agent AND relevant to inventory updates
-      if (agentId && notification.recipientId === agentId && notification.type === 'purchase_status_update') {
-        console.log('Relevant notification received, re-fetching inventory...');
+      if (
+        agentId &&
+        notification.recipientId === agentId &&
+        notification.type === "purchase_status_update"
+      ) {
+        console.log("Relevant notification received, re-fetching inventory...");
         fetchInventory(); // Re-fetch data to update the UI
       } else {
-        console.log('Notification not for this agent or not a relevant type.');
+        console.log("Notification not for this agent or not a relevant type.");
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('🔌 Socket.IO disconnected from AgentInventoryScreen');
+    socket.on("disconnect", () => {
+      console.log("🔌 Socket.IO disconnected from AgentInventoryScreen");
     });
 
-    socket.on('connect_error', (err) => {
-      console.error('❌ Socket.IO connection error in AgentInventoryScreen:', err.message);
+    socket.on("connect_error", (err) => {
+      console.error(
+        "❌ Socket.IO connection error in AgentInventoryScreen:",
+        err.message
+      );
       // You might want to show an alert to the user or retry connection
     });
 
     // Clean up socket connection on component unmount
     return () => {
-      console.log('AgentInventoryScreen unmounting, disconnecting socket...');
+      console.log("AgentInventoryScreen unmounting, disconnecting socket...");
       socket.disconnect();
     };
   }, [fetchInventory, agentId]); // Dependencies: re-run if fetchInventory or agentId changes
 
-
   const handleAddInventoryItem = async () => {
-    if (!newInventoryItem.meatType || !newInventoryItem.quantity || !newInventoryItem.pricePerKg) {
-      return Alert.alert('Validation Error', 'Please fill all required fields: Meat Type, Quantity, and Price.');
+    if (
+      !newInventoryItem.meatType ||
+      !newInventoryItem.quantity ||
+      !newInventoryItem.pricePerKg
+    ) {
+      return Alert.alert(
+        "Validation Error",
+        "Please fill all required fields: Meat Type, Quantity, and Price."
+      );
     }
 
     if (!newInventoryItem.slaughterhouseName) {
-        return Alert.alert('Error', 'Slaughterhouse name is missing. Please ensure your user profile is complete or manually set it.');
+      return Alert.alert(
+        "Error",
+        "Slaughterhouse name is missing. Please ensure your user profile is complete or manually set it."
+      );
     }
 
     try {
@@ -147,18 +169,29 @@ const AgentInventoryScreen = () => {
         isPublic: newInventoryItem.isPublic,
       });
       // Reset form fields
-      setNewInventoryItem(prev => ({ ...prev, meatType: '', quantity: '', pricePerKg: '', isPublic: true }));
+      setNewInventoryItem((prev) => ({
+        ...prev,
+        meatType: "",
+        quantity: "",
+        pricePerKg: "",
+        isPublic: true,
+      }));
       setShowAddInventoryModal(false);
       fetchInventory(); // Refresh list after adding
-      Alert.alert('Success', 'Inventory item added successfully!');
+      Alert.alert("Success", "Inventory item added successfully!");
     } catch (err) {
-      Alert.alert('Add Inventory Error', err.response?.data?.message || err.message || 'Failed to add inventory item.');
-      console.error('Add Inventory Error:', err.response?.data || err.message);
+      Alert.alert(
+        "Add Inventory Error",
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to add inventory item."
+      );
+      console.error("Add Inventory Error:", err.response?.data || err.message);
     }
   };
 
   const getMeatImage = (meatType) => {
-    const lowerMeatType = (meatType || '').toLowerCase();
+    const lowerMeatType = (meatType || "").toLowerCase();
     if (meatImages[lowerMeatType]) {
       return meatImages[lowerMeatType];
     }
@@ -177,7 +210,11 @@ const AgentInventoryScreen = () => {
         </TouchableOpacity>
 
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={localStyles.loadingIndicator} />
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={localStyles.loadingIndicator}
+          />
         ) : (
           <FlatList
             data={inventory}
@@ -189,17 +226,35 @@ const AgentInventoryScreen = () => {
               return (
                 <InfoCard
                   title={String(item.meatType)}
-                  value={`Stock: ${String(item.quantity)}kg @ KES ${String(item.pricePerKg)}/kg`}
-                  subtitle={`Slaughterhouse: ${String(item.slaughterhouseName)} | Public: ${item.isPublic ? 'Yes' : 'No'}`}
+                  value={`Stock: ${String(item.quantity)}kg @ KES ${String(
+                    item.pricePerKg
+                  )}/kg`}
+                  subtitle={`Slaughterhouse: ${String(
+                    item.slaughterhouseName
+                  )} | Public: ${item.isPublic ? "Yes" : "No"}`}
                   imageSource={getMeatImage(item.meatType)}
                 >
                   {/* Add edit/delete actions if needed for inventory items */}
                 </InfoCard>
               );
             }}
-            keyExtractor={(item) => String(item._id || item.meatType + item.slaughterhouseName + Math.random())} // Added Math.random() for robustness
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchInventory} />}
-            ListEmptyComponent={<Text style={globalStyles.emptyStateText}>No inventory items found.</Text>}
+            keyExtractor={(item) =>
+              String(
+                item._id ||
+                  item.meatType + item.slaughterhouseName + Math.random()
+              )
+            } // Added Math.random() for robustness
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={fetchInventory}
+              />
+            }
+            ListEmptyComponent={
+              <Text style={globalStyles.emptyStateText}>
+                No inventory items found.
+              </Text>
+            }
           />
         )}
       </View>
@@ -219,25 +274,34 @@ const AgentInventoryScreen = () => {
               style={globalStyles.input}
               placeholder="Meat Type (e.g., Beef, Goat)"
               value={newInventoryItem.meatType}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, meatType: text })}
+              onChangeText={(text) =>
+                setNewInventoryItem({ ...newInventoryItem, meatType: text })
+              }
             />
             <TextInput
               style={globalStyles.input}
               placeholder="Quantity (kg)"
               value={newInventoryItem.quantity}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, quantity: text })}
+              onChangeText={(text) =>
+                setNewInventoryItem({ ...newInventoryItem, quantity: text })
+              }
               keyboardType="numeric"
             />
             <TextInput
               style={globalStyles.input}
               placeholder="Price per Kg (KES)"
               value={newInventoryItem.pricePerKg}
-              onChangeText={(text) => setNewInventoryItem({ ...newInventoryItem, pricePerKg: text })}
+              onChangeText={(text) =>
+                setNewInventoryItem({ ...newInventoryItem, pricePerKg: text })
+              }
               keyboardType="numeric"
             />
             {/* Display slaughterhouseName but make it non-editable as it comes from userName */}
             <TextInput
-              style={[globalStyles.input, { backgroundColor: COLORS.lightGrey }]}
+              style={[
+                globalStyles.input,
+                { backgroundColor: COLORS.lightGrey },
+              ]}
               value={newInventoryItem.slaughterhouseName}
               editable={false}
               placeholder="Slaughterhouse Name"
@@ -246,7 +310,14 @@ const AgentInventoryScreen = () => {
 
             <View style={localStyles.modalButtons}>
               <TouchableOpacity
-                style={[globalStyles.button, { flex: 1, marginRight: 10, backgroundColor: COLORS.secondary }]}
+                style={[
+                  globalStyles.button,
+                  {
+                    flex: 1,
+                    marginRight: 10,
+                    backgroundColor: COLORS.secondary,
+                  },
+                ]}
                 onPress={() => setShowAddInventoryModal(false)}
               >
                 <Text style={globalStyles.buttonText}>Cancel</Text>
@@ -261,7 +332,6 @@ const AgentInventoryScreen = () => {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 };
@@ -281,17 +351,17 @@ const localStyles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
     backgroundColor: COLORS.bg,
     padding: 20,
     borderRadius: 12,
-    width: '90%',
-    maxHeight: '80%', // Limit height for smaller screens
-    shadowColor: '#000',
+    width: "90%",
+    maxHeight: "80%", // Limit height for smaller screens
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -299,14 +369,14 @@ const localStyles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.textDark,
     marginBottom: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 20,
   },
 });

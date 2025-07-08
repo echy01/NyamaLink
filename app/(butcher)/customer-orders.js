@@ -282,7 +282,7 @@ const ButcherCustomerOrdersScreen = () => {
                 />
                 <TextInput
                   style={globalStyles.input}
-                  placeholder="Carrier (e.g., In-house, G4S)"
+                  placeholder="Carrier (e.g., In-house, Motorbike)"
                   placeholderTextColor={COLORS.textLight}
                   value={customerOrderCarrier}
                   onChangeText={setCustomerOrderCarrier}

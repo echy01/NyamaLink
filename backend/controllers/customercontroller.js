@@ -49,6 +49,13 @@ const placeOrder = asyncHandler(async (req, res) => {
     throw new Error('Not authorized, user is not a customer or ID not found');
   }
 
+  // ✅ Fetch the logged-in user
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Customer not found');
+  }
+
   const meatToOrder = await Inventory.findOne({
     _id: meatId,
     ownerType: 'butcher',
@@ -69,7 +76,7 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const newOrder = new Order({
     customerId: req.user._id,
-    customerPhone: user.phone, 
+    customerPhone: user.phoneNumber,
     customerName: user.name,
     butcherId: meatToOrder.ownerId,
     butcheryName: meatToOrder.slaughterhouseName,
@@ -90,7 +97,7 @@ const placeOrder = asyncHandler(async (req, res) => {
   const io = req.app.get('io');
   io.emit('new_notification', {
     title: '🛒 New Customer Order',
-    message: `${req.user.name || 'A customer'} placed an order for ${quantity}kg of ${meatToOrder.meatType}`,
+    message: `${user.name} placed an order for ${quantity}kg of ${meatToOrder.meatType}`,
     timestamp: new Date(),
     type: 'order_status_update',
     read: false,
@@ -102,7 +109,6 @@ const placeOrder = asyncHandler(async (req, res) => {
     remainingStock: meatToOrder.quantity
   });
 });
-
 // 📜 Get customer's own orders
 const getMyOrders = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id || req.user.role !== 'customer') {
